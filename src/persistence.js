@@ -30,8 +30,17 @@
   const persistence = {
     available: !!storage,
 
+    /** Saves the project; the wall photo (if any) is embedded so the file is self-contained. */
     saveToFile() {
-      const blob = new Blob([A.store.serialize()], { type: 'application/json' });
+      const state = A.store.getState();
+      let json = A.store.serialize();
+      const dataUrl = state.wallPhoto && A.photo ? A.photo.dataUrl(state.wallPhoto.id) : null;
+      if (dataUrl) {
+        const obj = JSON.parse(json);
+        obj.wallPhoto.dataUrl = dataUrl;
+        json = JSON.stringify(obj, null, 2);
+      }
+      const blob = new Blob([json], { type: 'application/json' });
       A.util.downloadBlob(blob, fileName());
     },
 
@@ -46,7 +55,20 @@
           if (!file) return resolve({ ok: false, cancelled: true, errors: [] });
           if (file.size > 5 * 1024 * 1024) return resolve({ ok: false, errors: ['File is larger than 5 MB — not an Arch2D project.'] });
           const reader = new FileReader();
-          reader.onload = () => resolve(A.store.load(String(reader.result), { source: 'file' }));
+          reader.onload = () => {
+            let obj;
+            try {
+              obj = JSON.parse(String(reader.result));
+            } catch (e) {
+              return resolve({ ok: false, errors: ['File is not valid JSON.'] });
+            }
+            // Move an embedded photo into the photo library; State keeps only the id.
+            if (obj && obj.wallPhoto && obj.wallPhoto.dataUrl && A.photo) {
+              const id = A.photo.register(obj.wallPhoto.dataUrl);
+              obj.wallPhoto = id ? Object.assign({}, obj.wallPhoto, { id, dataUrl: undefined }) : null;
+            }
+            resolve(A.store.load(obj, { source: 'file' }));
+          };
           reader.onerror = () => resolve({ ok: false, errors: ['Could not read the file.'] });
           reader.readAsText(file);
         };
@@ -74,6 +96,7 @@
       if (!storage) return false;
       try {
         storage.setItem(AUTOSAVE_KEY, JSON.stringify(A.store.getState()));
+        if (A.photo) A.photo.syncStorage(A.store.getState());
         A.bus.emit('autosave:written', { at: Date.now() });
         return true;
       } catch (e) {

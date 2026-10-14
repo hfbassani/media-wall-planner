@@ -20,6 +20,7 @@
   let snapping = true;
   let eyeLevel = true; // Seated spectator eye level & ideal TV vertical center
   let eyeLevelCm = V.config.defaultEyeLevelCm || 105;
+  let ghost = false; // draw elements translucent to see the wall photo behind them
 
   // Active pointers map for multitouch / pinch zoom
   const activePointers = new Map();
@@ -563,6 +564,7 @@
       uiScale: 1,
       dpr,
       background: '#0b0d11',
+      ghost,
     });
 
     ctx.restore();
@@ -594,6 +596,7 @@
     // Listen to store updates
     A.bus.on('state:changed', () => requestRedraw());
     A.bus.on('selection:changed', () => requestRedraw());
+    A.bus.on('photo:ready', () => requestRedraw());
 
     resize();
     fit();
@@ -636,5 +639,12 @@
       snapping = !!val;
     },
     isSnapping: () => snapping,
+    setGhost: (val) => {
+      ghost = !!val;
+      requestRedraw();
+      A.bus.emit('ghost:toggled', { visible: ghost });
+    },
+    toggleGhost: () => A.canvas.setGhost(!ghost),
+    isGhost: () => ghost,
   };
 })();

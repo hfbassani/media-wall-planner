@@ -53,6 +53,7 @@
       uiScale,
       dpr: 1,
       background: opts.background || '#ffffff',
+      photo: opts.photo !== undefined ? !!opts.photo : true,
     });
 
     return canvas;

@@ -171,12 +171,17 @@
 
     const extraMods = modifiers.length ? `\n• Stylistic Enhancements: ${modifiers.join(', ')}.` : '';
 
+    const hasPhoto = !!(state.wallPhoto && state.wallPhoto.visible);
+    const settingPara = hasPhoto
+      ? `2. Real Room Architectural Setting: The design in the attached reference image is mapped directly onto an actual photograph of the client's living room. Preserve the real architectural room context, surrounding walls, existing floor finish, ambient room lighting, ceiling geometry, and environment visible in the reference photo, seamlessly installing the bespoke media wall cabinetry onto this physical wall.`
+      : `2. Architectural Setting & Atmosphere: Set inside a luxury contemporary residence (${m.phrase} aesthetic). The main wall is finished in ${m.wallMaterial}. In the foreground, the floor is ${m.flooring || 'wide-plank European white oak hardwood with a subtle matte satin finish'}. The ceiling features a flush architectural shadowline reveal. ${m.atmosphere || 'Soft, diffused natural daylight enters through off-camera floor-to-ceiling sheer linen curtains, casting gentle directional window shadows across the wall.'}`;
+
     return [
       `The attached image is a 2D architectural CAD elevation schematic of a bespoke media wall. Render a hyper-realistic, photograph of this exact layout in a luxury residential interior:`,
       ``,
       `1. Layout & Reference Fidelity: Strictly follow the layout, proportions, and placement of all cabinetry, wall panels, TV, and shelving shown in the attached schematic. Crucial: Do NOT render any blue dimension lines, measurement numbers, arrows, bounding boxes, or CAD text labels from the reference image. Interpret all markings solely as physical architectural cabinetry and wall geometry.`,
       ``,
-      `2. Architectural Setting & Atmosphere: Set inside a luxury contemporary residence (${m.phrase} aesthetic). The main wall is finished in ${m.wallMaterial}. In the foreground, the floor is ${m.flooring || 'wide-plank European white oak hardwood with a subtle matte satin finish'}. The ceiling features a flush architectural shadowline reveal. ${m.atmosphere || 'Soft, diffused natural daylight enters through off-camera floor-to-ceiling sheer linen curtains, casting gentle directional window shadows across the wall.'}`,
+      settingPara,
       ``,
       `3. Materials & Craftsmanship:`,
       ...craftBulletPoints,

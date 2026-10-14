@@ -62,6 +62,13 @@
       return;
     }
 
+    // 5c. Ghost Elements Toggle: 'g' or 'G' without modifier
+    if (!cmdOrCtrl && (key === 'g' || key === 'G')) {
+      e.preventDefault();
+      A.canvas.toggleGhost();
+      return;
+    }
+
     // 6. Delete / Backspace
     if (key === 'Delete' || key === 'Backspace') {
       const sel = A.store.getSelection();

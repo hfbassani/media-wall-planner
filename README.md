@@ -14,12 +14,14 @@
 * **👁️ Ergonomic Seated Eye-Level & TV Center Datum**: Built-in ergonomic benchmark anchored at **105 cm AFF** (approx. 42" per CEDIA/THX standards) with comfort viewing zones ($\pm 10\text{ cm}$) and one-click automatic TV alignment.
 * **🎨 Pure Canvas 2D Textures (No SVG, No External Assets)**: Programmatic rendering of vertical fluted timber slats, continuous cathedral wood grains, acoustic mesh fabrics, ultra-matte lacquers, pitch-black OLED screens, limewashed open niches, and animated linear fireplace flames.
 * **💡 Architectural LED Lighting**: Real-time simulation of concealed 2700K–4000K LED halo backlighting and downward under-cabinet wash illumination.
+* **🖼️ Real Wall Photo Background & 4-Corner Perspective Calibration**: Upload a smartphone photo of the physical wall taken from any angle. Use the interactive 4-corner calibration tool with 3× loupe magnifier and live perspective grid to rectify the photo into a true-to-scale, distortion-free background elevation.
+* **👻 Ghost Mode (X-Ray View)**: Instantly make all furniture elements translucent (40% opacity with cyan dashed outlines) via the <kbd>G</kbd> key or toolbar toggle so existing wall electrical outlets, conduits, and light switches remain visible while arranging cabinetry.
 * **✨ Multimodal AI Render & Prompt Studio**:
-  * **🖼️ Vision Reference Mode (Gemini / Multimodal)**: Generates prompts optimized for pairing with exported elevation images. Suppresses CAD lines/labels and focuses on tactile materials, lighting physics, and interior atmosphere.
+  * **🖼️ Vision Reference Mode (Gemini / Multimodal)**: Generates prompts optimized for pairing with exported elevation images. Suppresses CAD lines/labels and focuses on tactile materials, lighting physics, and interior atmosphere. Intelligently informs the AI when a real room photo background is present to preserve existing flooring, walls, and ambient lighting.
   * **⚡ Multi-Provider Generation**: Built-in live rendering support for Pollinations (Flux — free, no account needed), Google Gemini / Nano Banana, OpenAI GPT-Image, and Custom/Local OpenAI-compatible endpoints.
   * **🎚️ Side-by-Side & Split Comparison Slider**: Compare 2D architectural CAD drawings with 3D AI renders in real time.
 * **💾 Zero-Install & Self-Contained**: The complete application compiles into a single, dependency-free `index.html` that runs by double-clicking in any modern browser without Node.js or npm.
-* **📂 Full Persistence**: Export/import projects via `.arch2d.json` and automatic browser `localStorage` recovery.
+* **📂 Full Persistence**: Export/import projects via `.arch2d.json` (including embedded calibrated wall photo references) and automatic browser `localStorage` recovery.
 
 ---
 
@@ -37,6 +39,16 @@ open index.html   # On macOS
 # or start a lightweight server:
 python3 -m http.server 8080
 ```
+
+---
+
+## 📸 Real Wall Photo & Perspective Calibration
+
+Design directly over your existing room:
+1. **Upload**: In the Left Sidebar under **Wall Photo Background**, click `📷 Upload Wall Photo` and select any photo of your physical wall.
+2. **4-Corner Calibration**: If the photo was taken at an angle, click `📐 Calibrate (4 Corners)`. Drag the four corner handles (TL, TR, BR, BL) to match the wall's actual physical boundary corners. A real-time 3× zoom magnifier loupe and perspective grid ensure sub-millimeter precision.
+3. **Ghost Mode (<kbd>G</kbd>)**: Toggle Ghost mode to see through cabinets and slat panels, allowing precise alignment around physical wall sockets, vents, and light switches.
+4. **Export Option**: Choose whether the photo background is included or excluded when exporting clean reference renders for AI generation.
 
 ---
 
@@ -74,6 +86,7 @@ To generate a photorealistic 3D interior render from your 2D elevation drawing:
 | <kbd>Shift</kbd> + Click | Multi-select elements |
 | <kbd>A</kbd> | Toggle dimension callout overlay |
 | <kbd>E</kbd> | Toggle seated eye level & TV center datum |
+| <kbd>G</kbd> | Toggle Ghost mode (translucent elements over wall photo) |
 
 ---
 
@@ -91,6 +104,8 @@ media-wall-planner/
 │   ├── 02-vocab.js     # Textures, moods, presets & prompt chips
 │   ├── state.js        # Immutable state store with undo/redo stack
 │   ├── textures.js     # Pure HTML5 Canvas 2D procedural shaders
+│   ├── photo.js        # Wall photo ingestion, homography & storage
+│   ├── photo-calibrate.js # 4-corner perspective calibration modal
 │   ├── render.js       # Elevation renderer, rulers, annotations & TV datum
 │   ├── canvas.js       # Viewport controller (pan, zoom, drag, resize, snap)
 │   ├── prompt.js       # Multimodal vision & prose prompt generator

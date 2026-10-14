@@ -489,6 +489,88 @@ html, body {
     transform: translateX(0);
   }
 }
+
+/* Calibration modal & photo controls */
+.calib-modal {
+  width: 95vw;
+  max-width: 1100px;
+  height: 88vh;
+  max-height: 800px;
+}
+.calib-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+.calib-stage {
+  flex: 1;
+  position: relative;
+  background: #07090c;
+  overflow: hidden;
+}
+.calib-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+.calib-side {
+  width: 320px;
+  background: var(--bg-1);
+  border-left: 1px solid var(--line);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  overflow-y: auto;
+}
+.calib-steps {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--fs-xs);
+  color: var(--text-1);
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.calib-note {
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  line-height: 1.4;
+}
+.calib-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: auto;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+.photo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.photo-thumb-wrap {
+  position: relative;
+  width: 100%;
+  height: 90px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: #000;
+}
+.photo-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 </style>
 <style>
 /* === src/studio.css === */
@@ -1191,7 +1273,17 @@ html, body {
   let txnSnapshot = null; // snapshot taken at begin()
 
   function emptyState() {
-    return { schemaVersion: SCHEMA_VERSION, name: 'Untitled media wall', wallWidth: 400, wallHeight: 280, mood: 'japandi', elements: [] };
+    return { schemaVersion: SCHEMA_VERSION, name: 'Untitled media wall', wallWidth: 400, wallHeight: 280, mood: 'japandi', wallPhoto: null, elements: [] };
+  }
+
+  /** wallPhoto is an optional reference into A.photo; image bytes never live in State. */
+  function normalizeWallPhoto(raw) {
+    if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string' || !raw.id) return null;
+    return {
+      id: raw.id.slice(0, 64),
+      visible: raw.visible !== false,
+      showOnExport: raw.showOnExport !== false,
+    };
   }
 
   /* ---------- validation / normalization ---------- */
@@ -1237,6 +1329,7 @@ html, body {
       wallWidth: clamp(num(obj.wallWidth, 400), 50, 5000),
       wallHeight: clamp(num(obj.wallHeight, 280), 50, 2000),
       mood: V.moods[obj.mood] ? obj.mood : 'japandi',
+      wallPhoto: normalizeWallPhoto(obj.wallPhoto),
       elements: [],
     };
     const sorted = obj.elements
@@ -1434,6 +1527,15 @@ html, body {
       if (!V.moods[id]) return;
       update((d) => (d.mood = id), { reason: 'mood' });
     },
+    /** Replace (or clear with null) the wall photo reference. */
+    setWallPhoto(ref) {
+      update((d) => (d.wallPhoto = normalizeWallPhoto(ref)), { reason: 'photo' });
+    },
+    /** Toggle photo flags, e.g. { visible: false }. No-op without a photo. */
+    patchWallPhoto(partial) {
+      if (!state.wallPhoto) return;
+      update((d) => (d.wallPhoto = normalizeWallPhoto(Object.assign({}, d.wallPhoto, partial))), { reason: 'photo' });
+    },
 
     /* history */
     canUndo: () => undoStack.length > 0,
@@ -1527,8 +1629,17 @@ html, body {
   const persistence = {
     available: !!storage,
 
+    /** Saves the project; the wall photo (if any) is embedded so the file is self-contained. */
     saveToFile() {
-      const blob = new Blob([A.store.serialize()], { type: 'application/json' });
+      const state = A.store.getState();
+      let json = A.store.serialize();
+      const dataUrl = state.wallPhoto && A.photo ? A.photo.dataUrl(state.wallPhoto.id) : null;
+      if (dataUrl) {
+        const obj = JSON.parse(json);
+        obj.wallPhoto.dataUrl = dataUrl;
+        json = JSON.stringify(obj, null, 2);
+      }
+      const blob = new Blob([json], { type: 'application/json' });
       A.util.downloadBlob(blob, fileName());
     },
 
@@ -1543,7 +1654,20 @@ html, body {
           if (!file) return resolve({ ok: false, cancelled: true, errors: [] });
           if (file.size > 5 * 1024 * 1024) return resolve({ ok: false, errors: ['File is larger than 5 MB — not an Arch2D project.'] });
           const reader = new FileReader();
-          reader.onload = () => resolve(A.store.load(String(reader.result), { source: 'file' }));
+          reader.onload = () => {
+            let obj;
+            try {
+              obj = JSON.parse(String(reader.result));
+            } catch (e) {
+              return resolve({ ok: false, errors: ['File is not valid JSON.'] });
+            }
+            // Move an embedded photo into the photo library; State keeps only the id.
+            if (obj && obj.wallPhoto && obj.wallPhoto.dataUrl && A.photo) {
+              const id = A.photo.register(obj.wallPhoto.dataUrl);
+              obj.wallPhoto = id ? Object.assign({}, obj.wallPhoto, { id, dataUrl: undefined }) : null;
+            }
+            resolve(A.store.load(obj, { source: 'file' }));
+          };
           reader.onerror = () => resolve({ ok: false, errors: ['Could not read the file.'] });
           reader.readAsText(file);
         };
@@ -1571,6 +1695,7 @@ html, body {
       if (!storage) return false;
       try {
         storage.setItem(AUTOSAVE_KEY, JSON.stringify(A.store.getState()));
+        if (A.photo) A.photo.syncStorage(A.store.getState());
         A.bus.emit('autosave:written', { at: Date.now() });
         return true;
       } catch (e) {
@@ -1607,6 +1732,668 @@ html, body {
   };
 
   A.persistence = persistence;
+})();
+</script>
+<script>
+/* === src/photo.js === */
+/* Arch2D — Wall photo library: decode, 4-corner perspective rectification, storage.
+   The State only holds a small reference { id, visible, showOnExport }. Image bytes live
+   here (in memory + one localStorage key), so undo snapshots stay small and drags stay fast.
+   Photos come from <input type="file"> as data URLs, so they never taint the canvas. */
+(function () {
+  'use strict';
+  const A = window.Arch2D;
+  const U = A.util;
+
+  const STORAGE_KEY = 'arch2d_wallphoto';
+  const SOURCE_MAX = 2400; // longest side kept for the calibration step (memory only)
+  const OUTPUT_MAX = 1600; // longest side of the rectified wall image (≈4 px/cm on a 4 m wall)
+  const JPEG_QUALITY = 0.82;
+
+  // id -> { dataUrl, img, ready, luminance, source?: HTMLCanvasElement, corners?: [{x,y}×4] }
+  const library = new Map();
+
+  /* ---------- decoding ---------- */
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('decode'));
+      img.src = src;
+    });
+  }
+
+  /** File → downscaled source canvas used by the calibration modal. Browsers apply EXIF orientation. */
+  async function ingest(file) {
+    if (!file || !/^image\//.test(file.type || 'image/')) throw new Error('not-image');
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await loadImage(url);
+      const scale = Math.min(1, SOURCE_MAX / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(img.naturalWidth * scale));
+      c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      return c;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  /* ---------- perspective math ---------- */
+  /** Homography mapping the unit square (u,v) → quad [TL, TR, BR, BL] (Heckbert's square-to-quad). */
+  function squareToQuad(q) {
+    const [p0, p1, p2, p3] = q;
+    const dx1 = p1.x - p2.x, dx2 = p3.x - p2.x, dx3 = p0.x - p1.x + p2.x - p3.x;
+    const dy1 = p1.y - p2.y, dy2 = p3.y - p2.y, dy3 = p0.y - p1.y + p2.y - p3.y;
+    let g = 0, h = 0;
+    if (Math.abs(dx3) > 1e-9 || Math.abs(dy3) > 1e-9) {
+      const den = dx1 * dy2 - dx2 * dy1;
+      g = (dx3 * dy2 - dx2 * dy3) / den;
+      h = (dx1 * dy3 - dx3 * dy1) / den;
+    }
+    const a = p1.x - p0.x + g * p1.x, b = p3.x - p0.x + h * p3.x, c = p0.x;
+    const d = p1.y - p0.y + g * p1.y, e = p3.y - p0.y + h * p3.y, f = p0.y;
+    return (u, v) => {
+      const w = g * u + h * v + 1;
+      return { x: (a * u + b * v + c) / w, y: (d * u + e * v + f) / w };
+    };
+  }
+
+  /** True when the quad [TL, TR, BR, BL] is convex and not self-intersecting. */
+  function isConvexQuad(q) {
+    let sign = 0;
+    for (let i = 0; i < 4; i++) {
+      const a = q[i], b = q[(i + 1) % 4], c = q[(i + 2) % 4];
+      const cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+      if (Math.abs(cross) < 1e-6) return false;
+      const s = Math.sign(cross);
+      if (sign && s !== sign) return false;
+      sign = s;
+    }
+    return true;
+  }
+
+  /**
+   * Warp the quad of `source` into a flat image with the wall's aspect ratio.
+   * Inverse mapping with bilinear sampling; runs once per calibration (~100–250 ms).
+   */
+  function rectify(source, corners, wallW, wallH) {
+    const aspect = wallW / wallH;
+    const outW = aspect >= 1 ? OUTPUT_MAX : Math.round(OUTPUT_MAX * aspect);
+    const outH = aspect >= 1 ? Math.round(OUTPUT_MAX / aspect) : OUTPUT_MAX;
+    const sw = source.width, sh = source.height;
+    const src = source.getContext('2d').getImageData(0, 0, sw, sh).data;
+    const out = document.createElement('canvas');
+    out.width = outW;
+    out.height = outH;
+    const octx = out.getContext('2d');
+    const img = octx.createImageData(outW, outH);
+    const dst = img.data;
+    const map = squareToQuad(corners);
+    let lumSum = 0, lumN = 0;
+
+    for (let j = 0; j < outH; j++) {
+      const v = (j + 0.5) / outH;
+      for (let i = 0; i < outW; i++) {
+        const p = map((i + 0.5) / outW, v);
+        const o = (j * outW + i) * 4;
+        const x = p.x - 0.5, y = p.y - 0.5;
+        const x0 = Math.floor(x), y0 = Math.floor(y);
+        if (x0 < 0 || y0 < 0 || x0 + 1 >= sw || y0 + 1 >= sh) {
+          // Corner dragged past the photo edge: neutral grey fill.
+          dst[o] = dst[o + 1] = dst[o + 2] = 128;
+          dst[o + 3] = 255;
+          continue;
+        }
+        const fx = x - x0, fy = y - y0;
+        const i00 = (y0 * sw + x0) * 4, i10 = i00 + 4, i01 = i00 + sw * 4, i11 = i01 + 4;
+        for (let ch = 0; ch < 3; ch++) {
+          const top = src[i00 + ch] + (src[i10 + ch] - src[i00 + ch]) * fx;
+          const bot = src[i01 + ch] + (src[i11 + ch] - src[i01 + ch]) * fx;
+          dst[o + ch] = top + (bot - top) * fy;
+        }
+        dst[o + 3] = 255;
+        if ((i & 15) === 0 && (j & 15) === 0) {
+          lumSum += (0.2126 * dst[o] + 0.7152 * dst[o + 1] + 0.0722 * dst[o + 2]) / 255;
+          lumN++;
+        }
+      }
+    }
+    octx.putImageData(img, 0, 0);
+    return { dataUrl: out.toDataURL('image/jpeg', JPEG_QUALITY), luminance: lumN ? lumSum / lumN : 0.5 };
+  }
+
+  /* ---------- library ---------- */
+  function idFor(dataUrl) {
+    return 'ph_' + U.hashString(dataUrl).toString(36) + dataUrl.length.toString(36);
+  }
+
+  /** Adds a rectified data URL to the library and returns its id. Safe to call repeatedly. */
+  function register(dataUrl, extra = {}) {
+    if (typeof dataUrl !== 'string' || !/^data:image\/(jpeg|png|webp);base64,/.test(dataUrl)) return null;
+    const id = idFor(dataUrl);
+    let entry = library.get(id);
+    if (!entry) {
+      entry = { dataUrl, img: null, ready: false, luminance: extra.luminance == null ? 0.5 : extra.luminance };
+      library.set(id, entry);
+      loadImage(dataUrl)
+        .then((img) => {
+          entry.img = img;
+          entry.ready = true;
+          if (extra.luminance == null) entry.luminance = measureLuminance(img);
+          A.bus.emit('photo:ready', { id });
+        })
+        .catch(() => library.delete(id));
+    }
+    if (extra.source) entry.source = extra.source;
+    if (extra.corners) entry.corners = extra.corners.map((c) => ({ x: c.x, y: c.y }));
+    return id;
+  }
+
+  function measureLuminance(img) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 16;
+    const x = c.getContext('2d');
+    x.drawImage(img, 0, 0, 16, 16);
+    const d = x.getImageData(0, 0, 16, 16).data;
+    let s = 0;
+    for (let i = 0; i < d.length; i += 4) s += (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255;
+    return s / 256;
+  }
+
+  /* ---------- storage (one localStorage slot for the current photo) ---------- */
+  function readStored() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  let storedId = (readStored() || {}).id || null;
+  let quotaWarned = false;
+
+  /** Keeps the single storage slot in sync with the photo referenced by the current state. */
+  function syncStorage(state) {
+    const id = state.wallPhoto ? state.wallPhoto.id : null;
+    if (id === storedId) return true;
+    try {
+      if (!id) {
+        localStorage.removeItem(STORAGE_KEY);
+        storedId = null;
+        return true;
+      }
+      const entry = library.get(id);
+      if (!entry) return false; // not decoded yet; next autosave retries
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ id, dataUrl: entry.dataUrl }));
+      storedId = id;
+      return true;
+    } catch (e) {
+      if (!quotaWarned && A.ui) {
+        quotaWarned = true;
+        A.ui.toast('Browser storage is full: the wall photo will not survive a reload. Use 💾 Save to keep it.', 'error');
+      }
+      return false;
+    }
+  }
+
+  /** Loads the stored photo into the library (called once at startup). */
+  function restoreFromStorage() {
+    const s = readStored();
+    if (s && s.dataUrl) register(s.dataUrl);
+  }
+
+  A.photo = {
+    ingest,
+    rectify,
+    isConvexQuad,
+    squareToQuad,
+    register,
+    restoreFromStorage,
+    syncStorage,
+    has: (id) => library.has(id),
+    /** Ready HTMLImageElement for drawing, or null while decoding / unknown id. */
+    image: (id) => {
+      const e = id && library.get(id);
+      return e && e.ready ? e.img : null;
+    },
+    dataUrl: (id) => {
+      const e = id && library.get(id);
+      return e ? e.dataUrl : null;
+    },
+    luminance: (id) => {
+      const e = id && library.get(id);
+      return e ? e.luminance : 0.5;
+    },
+    /** Original photo + corners, available only in the session where it was uploaded. */
+    calibration: (id) => {
+      const e = id && library.get(id);
+      return e && e.source ? { source: e.source, corners: e.corners } : null;
+    },
+  };
+
+  restoreFromStorage();
+})();
+</script>
+<script>
+/* === src/photo-calibrate.js === */
+/* Arch2D — Wall photo upload & 4-corner calibration modal.
+   Flow: pick image → mark wall corners (perspective grid + magnifier) → rectify to the
+   wall's W×H → store reference in State (one undo step). Owns its own modal DOM. */
+(function () {
+  'use strict';
+  const A = window.Arch2D;
+  const U = A.util;
+
+  const HANDLE_R = 9;
+  const HIT_R = 24; // generous for touch
+  const MARGIN = 40; // lets handles go slightly past the photo edge
+  const LOUPE = 132;
+  const LOUPE_ZOOM = 3;
+  const CORNER_LABELS = ['Top-left', 'Top-right', 'Bottom-right', 'Bottom-left'];
+
+  function pickFile() {
+    return new Promise((resolve) => {
+      const input = Object.assign(document.createElement('input'), {
+        type: 'file',
+        accept: 'image/jpeg,image/png,image/webp,image/heic,image/heif,image/*',
+      });
+      input.addEventListener('change', () => resolve((input.files && input.files[0]) || null));
+      input.addEventListener('cancel', () => resolve(null));
+      input.click();
+    });
+  }
+
+  /**
+   * Opens the calibration modal.
+   * Resolves { corners, wallWidth, wallHeight, dataUrl, luminance } or null when cancelled.
+   */
+  function open({ source, corners, wallWidth, wallHeight }) {
+    return new Promise((resolve) => {
+      const sw = source.width, sh = source.height;
+      let pts = corners && corners.length === 4
+        ? corners.map((c) => ({ x: c.x, y: c.y }))
+        : [
+            { x: sw * 0.12, y: sh * 0.12 },
+            { x: sw * 0.88, y: sh * 0.12 },
+            { x: sw * 0.88, y: sh * 0.88 },
+            { x: sw * 0.12, y: sh * 0.88 },
+          ];
+      let active = -1; // handle being dragged
+      let focusIdx = 0; // handle nudged by arrow keys
+      let grabOffset = { x: 0, y: 0 };
+      let view = { scale: 1, ox: 0, oy: 0, cw: 0, ch: 0, dpr: 1 };
+      let busy = false;
+
+      /* ----- DOM ----- */
+      const canvas = U.h('canvas', { class: 'calib-canvas', id: 'calib-canvas' });
+      const stage = U.h('div', { class: 'calib-stage' }, canvas);
+      const inputW = U.h('input', { type: 'number', class: 'input', id: 'calib-wall-width', min: '50', max: '5000', value: Math.round(wallWidth) });
+      const inputH = U.h('input', { type: 'number', class: 'input', id: 'calib-wall-height', min: '50', max: '2000', value: Math.round(wallHeight) });
+      const btnApply = U.h('button', { class: 'btn primary', id: 'btn-calib-apply', onclick: apply }, '✓ Apply photo');
+      const btnCancel = U.h('button', { class: 'btn ghost', id: 'btn-calib-cancel', onclick: () => close(null) }, 'Cancel');
+      const btnReset = U.h('button', { class: 'btn ghost sm', id: 'btn-calib-reset', onclick: resetCorners }, '↺ Reset corners');
+
+      const side = U.h(
+        'div',
+        { class: 'calib-side' },
+        U.h('div', { class: 'section-heading' }, 'How to calibrate'),
+        U.h(
+          'ol',
+          { class: 'calib-steps' },
+          U.h('li', null, 'Drag each handle onto a corner of the wall: where it meets the ceiling and the floor.'),
+          U.h('li', null, 'If a corner is hidden (furniture, curtains), place it where the corner would be. Handles can go slightly past the photo edge.'),
+          U.h('li', null, 'Check that the blue grid follows the wall lines (skirting board, ceiling edge).')
+        ),
+        U.h('div', { class: 'section-heading', style: { marginTop: '6px' } }, 'Real wall size (cm)'),
+        U.h(
+          'div',
+          { class: 'form-row' },
+          U.h('div', { class: 'form-field' }, U.h('label', { class: 'form-label', for: 'calib-wall-width' }, 'Width'), inputW),
+          U.h('div', { class: 'form-field' }, U.h('label', { class: 'form-label', for: 'calib-wall-height' }, 'Height'), inputH)
+        ),
+        U.h('div', { class: 'calib-note' }, 'Measure the wall: the cm grid and every dimension depend on these two numbers.'),
+        btnReset,
+        U.h('div', { class: 'calib-note' }, 'Tip: arrow keys move the last handle by 1 px (Shift = 10 px).'),
+        U.h('div', { class: 'calib-actions' }, btnCancel, btnApply)
+      );
+
+      const modal = U.h(
+        'div',
+        { class: 'studio-modal calib-modal', id: 'calib-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Mark the wall corners' },
+        U.h(
+          'div',
+          { class: 'studio-header' },
+          U.h('div', { class: 'studio-title' }, U.h('span', null, '📷'), U.h('span', null, 'Mark the wall corners')),
+          U.h('button', { class: 'icon-btn', title: 'Cancel (Esc)', 'aria-label': 'Cancel', onclick: () => close(null) }, '✕')
+        ),
+        U.h('div', { class: 'calib-body' }, stage, side)
+      );
+      const backdrop = U.h('div', { class: 'modal-backdrop open', id: 'calib-backdrop' }, modal);
+      document.body.appendChild(backdrop);
+
+      const ctx = canvas.getContext('2d');
+      const ro = new ResizeObserver(layout);
+      ro.observe(stage);
+      document.addEventListener('keydown', onKey, true);
+      canvas.addEventListener('pointerdown', onDown);
+      canvas.addEventListener('pointermove', onMove);
+      canvas.addEventListener('pointerup', onUp);
+      canvas.addEventListener('pointercancel', onUp);
+
+      /* ----- geometry ----- */
+      function layout() {
+        const r = stage.getBoundingClientRect();
+        view.dpr = window.devicePixelRatio || 1;
+        view.cw = Math.max(100, Math.floor(r.width));
+        view.ch = Math.max(100, Math.floor(r.height));
+        canvas.width = Math.round(view.cw * view.dpr);
+        canvas.height = Math.round(view.ch * view.dpr);
+        canvas.style.width = view.cw + 'px';
+        canvas.style.height = view.ch + 'px';
+        view.scale = Math.min((view.cw - MARGIN * 2) / sw, (view.ch - MARGIN * 2) / sh);
+        view.ox = (view.cw - sw * view.scale) / 2;
+        view.oy = (view.ch - sh * view.scale) / 2;
+        draw();
+      }
+      const toScreen = (p) => ({ x: view.ox + p.x * view.scale, y: view.oy + p.y * view.scale });
+      const toImage = (x, y) => ({ x: (x - view.ox) / view.scale, y: (y - view.oy) / view.scale });
+      function clampImage(p) {
+        const m = MARGIN / view.scale;
+        return { x: U.clamp(p.x, -m, sw + m), y: U.clamp(p.y, -m, sh + m) };
+      }
+      function localPoint(e) {
+        const r = canvas.getBoundingClientRect();
+        return { x: e.clientX - r.left, y: e.clientY - r.top };
+      }
+
+      /* ----- drawing ----- */
+      function draw() {
+        const { cw, ch, dpr } = view;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.fillStyle = '#07090c';
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(source, view.ox, view.oy, sw * view.scale, sh * view.scale);
+
+        const s = pts.map(toScreen);
+        const convex = A.photo.isConvexQuad(pts);
+
+        // Dim everything outside the wall quad.
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, cw, ch);
+        ctx.moveTo(s[0].x, s[0].y);
+        for (let i = 1; i < 4; i++) ctx.lineTo(s[i].x, s[i].y);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fill('evenodd');
+        ctx.restore();
+
+        // Perspective grid: shows how the photo will be straightened.
+        if (convex) {
+          const map = A.photo.squareToQuad(pts);
+          ctx.save();
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.55)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (let k = 1; k < 8; k++) {
+            const t = k / 8;
+            const a = toScreen(map(t, 0)), b = toScreen(map(t, 1));
+            const c = toScreen(map(0, t)), d = toScreen(map(1, t));
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.moveTo(c.x, c.y);
+            ctx.lineTo(d.x, d.y);
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Quad outline
+        ctx.save();
+        ctx.strokeStyle = convex ? 'hsl(190, 85%, 60%)' : 'hsl(4, 72%, 62%)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(s[0].x, s[0].y);
+        for (let i = 1; i < 4; i++) ctx.lineTo(s[i].x, s[i].y);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+
+        // Handles + labels
+        s.forEach((p, i) => {
+          const hot = i === active || (active < 0 && i === focusIdx);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, HANDLE_R, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(11, 15, 23, 0.9)';
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = hot ? 'hsl(36, 70%, 62%)' : 'hsl(190, 85%, 60%)';
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(p.x - 4, p.y);
+          ctx.lineTo(p.x + 4, p.y);
+          ctx.moveTo(p.x, p.y - 4);
+          ctx.lineTo(p.x, p.y + 4);
+          ctx.stroke();
+          // label pill, pushed outward from the quad centre
+          const cx = (s[0].x + s[1].x + s[2].x + s[3].x) / 4, cy = (s[0].y + s[1].y + s[2].y + s[3].y) / 4;
+          const dx = p.x - cx, dy = p.y - cy, len = Math.hypot(dx, dy) || 1;
+          const lx = p.x + (dx / len) * 26, ly = p.y + (dy / len) * 22;
+          ctx.font = "600 11px Inter, sans-serif";
+          const tw = ctx.measureText(CORNER_LABELS[i]).width;
+          ctx.fillStyle = 'rgba(11, 15, 23, 0.9)';
+          A.render.roundRect(ctx, lx - tw / 2 - 6, ly - 9, tw + 12, 18, 5);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(CORNER_LABELS[i], lx, ly + 0.5);
+          ctx.restore();
+        });
+
+        if (active >= 0) drawLoupe(pts[active], s[active]);
+
+        btnApply.disabled = busy || !convex;
+        btnApply.title = convex ? '' : 'The corners cross over. Put them in order: top-left, top-right, bottom-right, bottom-left.';
+      }
+
+      function drawLoupe(p, sp) {
+        // Sit in the top corner away from the handle, so the finger/cursor never covers it.
+        const pad = 12;
+        const lx = sp.x < view.cw / 2 ? view.cw - LOUPE - pad : pad;
+        const ly = pad;
+        const span = LOUPE / (view.scale * LOUPE_ZOOM); // image px shown
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(lx + LOUPE / 2, ly + LOUPE / 2, LOUPE / 2, 0, Math.PI * 2);
+        ctx.fillStyle = '#07090c';
+        ctx.fill();
+        ctx.clip();
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(source, p.x - span / 2, p.y - span / 2, span, span, lx, ly, LOUPE, LOUPE);
+        ctx.strokeStyle = 'hsl(36, 70%, 62%)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(lx + LOUPE / 2, ly);
+        ctx.lineTo(lx + LOUPE / 2, ly + LOUPE);
+        ctx.moveTo(lx, ly + LOUPE / 2);
+        ctx.lineTo(lx + LOUPE, ly + LOUPE / 2);
+        ctx.stroke();
+        ctx.restore();
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(lx + LOUPE / 2, ly + LOUPE / 2, LOUPE / 2, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      /* ----- interaction ----- */
+      function nearestHandle(x, y) {
+        let best = -1, bestD = HIT_R;
+        pts.forEach((p, i) => {
+          const s = toScreen(p);
+          const d = Math.hypot(s.x - x, s.y - y);
+          if (d < bestD) {
+            bestD = d;
+            best = i;
+          }
+        });
+        return best;
+      }
+      function onDown(e) {
+        const lp = localPoint(e);
+        const i = nearestHandle(lp.x, lp.y);
+        if (i < 0) return;
+        active = focusIdx = i;
+        const s = toScreen(pts[i]);
+        grabOffset = { x: s.x - lp.x, y: s.y - lp.y };
+        canvas.setPointerCapture(e.pointerId);
+        canvas.style.cursor = 'grabbing';
+        draw();
+      }
+      function onMove(e) {
+        const lp = localPoint(e);
+        if (active < 0) {
+          canvas.style.cursor = nearestHandle(lp.x, lp.y) >= 0 ? 'grab' : 'crosshair';
+          return;
+        }
+        pts[active] = clampImage(toImage(lp.x + grabOffset.x, lp.y + grabOffset.y));
+        draw();
+      }
+      function onUp(e) {
+        if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+        active = -1;
+        canvas.style.cursor = 'crosshair';
+        draw();
+      }
+      function onKey(e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          close(null);
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          apply();
+          return;
+        }
+        if (U.isTypingTarget(e.target)) return;
+        const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+        if (!d) return;
+        e.preventDefault();
+        e.stopPropagation(); // keep the main canvas from nudging elements
+        const step = e.shiftKey ? 10 : 1;
+        pts[focusIdx] = clampImage({ x: pts[focusIdx].x + d[0] * step, y: pts[focusIdx].y + d[1] * step });
+        draw();
+      }
+      function resetCorners() {
+        pts = [
+          { x: sw * 0.12, y: sh * 0.12 },
+          { x: sw * 0.88, y: sh * 0.12 },
+          { x: sw * 0.88, y: sh * 0.88 },
+          { x: sw * 0.12, y: sh * 0.88 },
+        ];
+        draw();
+      }
+
+      function apply() {
+        if (busy) return;
+        if (!A.photo.isConvexQuad(pts)) {
+          A.ui.toast('The corners cross over. Put them in order: top-left, top-right, bottom-right, bottom-left.', 'error');
+          return;
+        }
+        const w = U.clamp(parseFloat(inputW.value) || 0, 50, 5000);
+        const h = U.clamp(parseFloat(inputH.value) || 0, 50, 2000);
+        if (!w || !h) {
+          A.ui.toast('Enter the real wall width and height in cm.', 'error');
+          return;
+        }
+        busy = true;
+        btnApply.textContent = '⏳ Straightening…';
+        draw();
+        // Let the button repaint before the synchronous warp.
+        setTimeout(() => {
+          try {
+            const out = A.photo.rectify(source, pts, w, h);
+            close({ corners: pts.map((p) => ({ x: p.x, y: p.y })), wallWidth: w, wallHeight: h, dataUrl: out.dataUrl, luminance: out.luminance });
+          } catch (err) {
+            console.error('[Arch2D] rectify failed', err);
+            busy = false;
+            btnApply.textContent = '✓ Apply photo';
+            draw();
+            A.ui.toast('Could not process this photo. Try a smaller image.', 'error');
+          }
+        }, 30);
+      }
+
+      function close(result) {
+        ro.disconnect();
+        document.removeEventListener('keydown', onKey, true);
+        backdrop.remove();
+        resolve(result);
+      }
+    });
+  }
+
+  /* ---------- flows used by the sidebar ---------- */
+  async function calibrateAndApply(source, corners) {
+    const st = A.store.getState();
+    const res = await open({ source, corners, wallWidth: st.wallWidth, wallHeight: st.wallHeight });
+    if (!res) return false;
+    const id = A.photo.register(res.dataUrl, { luminance: res.luminance, source, corners: res.corners });
+    if (!id) {
+      A.ui.toast('Could not store the processed photo.', 'error');
+      return false;
+    }
+    const prev = st.wallPhoto;
+    A.store.begin(); // wall size + photo = one undo step
+    if (res.wallWidth !== st.wallWidth || res.wallHeight !== st.wallHeight) {
+      A.store.setWall({ wallWidth: res.wallWidth, wallHeight: res.wallHeight });
+    }
+    A.store.setWallPhoto({ id, visible: true, showOnExport: prev ? prev.showOnExport : true });
+    A.store.commit();
+    A.canvas.fit();
+    A.ui.toast('Wall photo applied. Press G to see through the furniture.', 'success');
+    return true;
+  }
+
+  async function upload() {
+    const file = await pickFile();
+    if (!file) return false;
+    let source;
+    try {
+      source = await A.photo.ingest(file);
+    } catch (e) {
+      const heic = /hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name || '');
+      A.ui.toast(
+        heic
+          ? 'This browser cannot read HEIC photos. Export the photo as JPG (on iPhone: Settings → Camera → Formats → Most Compatible).'
+          : 'Could not read this image. Use a JPG, PNG or WebP photo.',
+        'error'
+      );
+      return false;
+    }
+    return calibrateAndApply(source, null);
+  }
+
+  /** Re-open calibration for the current photo (only in the session it was uploaded). */
+  async function adjust() {
+    const p = A.store.getState().wallPhoto;
+    const cal = p && A.photo.calibration(p.id);
+    if (!cal) return upload();
+    return calibrateAndApply(cal.source, cal.corners);
+  }
+
+  A.photoCalibrate = { open, upload, adjust };
 })();
 </script>
 <script>
@@ -2107,9 +2894,18 @@ html, body {
     return pat;
   }
 
+  /** Ready photo image for this render pass, or null (no photo, hidden, excluded, or decoding). */
+  function photoFor(state, o) {
+    const p = state.wallPhoto;
+    if (!o.photo || !p || !A.photo) return null;
+    if (o.theme === 'export' ? !p.showOnExport : !p.visible) return null;
+    return A.photo.image(p.id);
+  }
+
   function drawWall(ctx, state, T, o) {
     const m = V.moods[state.mood] || V.moods.japandi;
     const x = T.x(0), y = T.y(state.wallHeight), w = state.wallWidth * T.s, h = state.wallHeight * T.s;
+    const photo = photoFor(state, o);
     ctx.save();
     if (o.theme === 'screen') {
       ctx.shadowColor = 'rgba(0,0,0,0.45)';
@@ -2119,6 +2915,14 @@ html, body {
     ctx.fillStyle = m.wall;
     ctx.fillRect(x, y, w, h);
     ctx.restore();
+    if (photo) {
+      // The photo was rectified to the wall's aspect ratio, so it maps 1:1 onto the wall rect.
+      ctx.save();
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(photo, x, y, w, h);
+      ctx.restore();
+      return; // real photo carries its own texture and lighting
+    }
     ctx.save();
     ctx.translate(x, y);
     ctx.fillStyle = wallPattern(ctx, state.mood, T.s);
@@ -2132,13 +2936,14 @@ html, body {
     ctx.fillRect(x, y, w, Math.min(h, 40 * T.s));
   }
 
-  function inkFor(state) {
+  function inkFor(state, o) {
     const m = V.moods[state.mood] || V.moods.japandi;
-    return U.luminance(m.wall) > 0.5 ? '0,0,0' : '255,255,255';
+    const lum = o && photoFor(state, o) ? A.photo.luminance(state.wallPhoto.id) : U.luminance(m.wall);
+    return lum > 0.5 ? '0,0,0' : '255,255,255';
   }
 
   function drawGrid(ctx, state, T, o) {
-    const ink = inkFor(state);
+    const ink = inkFor(state, o);
     const x0 = T.x(0), x1 = T.x(state.wallWidth), y0 = T.y(0), y1 = T.y(state.wallHeight);
     const levels = [
       { step: 5, alpha: 0.07, dash: [2, 3], min: 6 },
@@ -2648,7 +3453,7 @@ html, body {
   /* ---------- public ---------- */
   function drawScene(ctx, state, opts) {
     const o = Object.assign(
-      { time: 0, grid: true, annotations: false, eyeLevel: false, eyeLevelCm: V.config.defaultEyeLevelCm, labels: true, rulers: true, selection: [], hud: true, guides: [], marquee: null, theme: 'screen', uiScale: 1, dpr: 1, background: null },
+      { time: 0, grid: true, annotations: false, eyeLevel: false, eyeLevelCm: V.config.defaultEyeLevelCm, labels: true, rulers: true, selection: [], hud: true, guides: [], marquee: null, theme: 'screen', uiScale: 1, dpr: 1, background: null, photo: true, ghost: false },
       opts
     );
     const T = makeTransform(o.pxPerCm, o.originX, o.originY);
@@ -2662,6 +3467,9 @@ html, body {
     if (o.rulers) drawRulers(ctx, state, T, o);
 
     const textureOpts = { pxPerCm: T.s, time: o.time, mood: state.mood };
+    // Ghost mode: see outlets/switches in the photo behind the millwork. Textures multiply globalAlpha.
+    ctx.save();
+    if (o.ghost) ctx.globalAlpha = 0.4;
     for (const el of state.elements) {
       const r = T.rect(el);
       if (el.ledHalo) drawHalo(ctx, el, r, T, o);
@@ -2672,6 +3480,19 @@ html, body {
       ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
       ctx.restore();
       if (el.ledUnderglow) drawUnderglow(ctx, el, r, T);
+    }
+    ctx.restore();
+    if (o.ghost) {
+      // Keep footprints readable while translucent.
+      ctx.save();
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.9)';
+      ctx.lineWidth = 1.25;
+      for (const el of state.elements) {
+        const r = T.rect(el);
+        ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
+      }
+      ctx.restore();
     }
     if (o.labels) for (const el of state.elements) drawLabel(ctx, el, T.rect(el), o);
     if (o.annotations) drawAnnotations(ctx, state, T, o);
@@ -2748,6 +3569,7 @@ html, body {
       uiScale,
       dpr: 1,
       background: opts.background || '#ffffff',
+      photo: opts.photo !== undefined ? !!opts.photo : true,
     });
 
     return canvas;
@@ -2909,6 +3731,7 @@ html, body {
   let snapping = true;
   let eyeLevel = true; // Seated spectator eye level & ideal TV vertical center
   let eyeLevelCm = V.config.defaultEyeLevelCm || 105;
+  let ghost = false; // draw elements translucent to see the wall photo behind them
 
   // Active pointers map for multitouch / pinch zoom
   const activePointers = new Map();
@@ -3452,6 +4275,7 @@ html, body {
       uiScale: 1,
       dpr,
       background: '#0b0d11',
+      ghost,
     });
 
     ctx.restore();
@@ -3483,6 +4307,7 @@ html, body {
     // Listen to store updates
     A.bus.on('state:changed', () => requestRedraw());
     A.bus.on('selection:changed', () => requestRedraw());
+    A.bus.on('photo:ready', () => requestRedraw());
 
     resize();
     fit();
@@ -3525,6 +4350,13 @@ html, body {
       snapping = !!val;
     },
     isSnapping: () => snapping,
+    setGhost: (val) => {
+      ghost = !!val;
+      requestRedraw();
+      A.bus.emit('ghost:toggled', { visible: ghost });
+    },
+    toggleGhost: () => A.canvas.setGhost(!ghost),
+    isGhost: () => ghost,
   };
 })();
 </script>
@@ -3591,6 +4423,13 @@ html, body {
     if (!cmdOrCtrl && (key === 'e' || key === 'E')) {
       e.preventDefault();
       A.canvas.toggleEyeLevel();
+      return;
+    }
+
+    // 5c. Ghost Elements Toggle: 'g' or 'G' without modifier
+    if (!cmdOrCtrl && (key === 'g' || key === 'G')) {
+      e.preventDefault();
+      A.canvas.toggleGhost();
       return;
     }
 
@@ -4138,12 +4977,17 @@ html, body {
 
     const extraMods = modifiers.length ? `\n• Stylistic Enhancements: ${modifiers.join(', ')}.` : '';
 
+    const hasPhoto = !!(state.wallPhoto && state.wallPhoto.visible);
+    const settingPara = hasPhoto
+      ? `2. Real Room Architectural Setting: The design in the attached reference image is mapped directly onto an actual photograph of the client's living room. Preserve the real architectural room context, surrounding walls, existing floor finish, ambient room lighting, ceiling geometry, and environment visible in the reference photo, seamlessly installing the bespoke media wall cabinetry onto this physical wall.`
+      : `2. Architectural Setting & Atmosphere: Set inside a luxury contemporary residence (${m.phrase} aesthetic). The main wall is finished in ${m.wallMaterial}. In the foreground, the floor is ${m.flooring || 'wide-plank European white oak hardwood with a subtle matte satin finish'}. The ceiling features a flush architectural shadowline reveal. ${m.atmosphere || 'Soft, diffused natural daylight enters through off-camera floor-to-ceiling sheer linen curtains, casting gentle directional window shadows across the wall.'}`;
+
     return [
       `The attached image is a 2D architectural CAD elevation schematic of a bespoke media wall. Render a hyper-realistic, photograph of this exact layout in a luxury residential interior:`,
       ``,
       `1. Layout & Reference Fidelity: Strictly follow the layout, proportions, and placement of all cabinetry, wall panels, TV, and shelving shown in the attached schematic. Crucial: Do NOT render any blue dimension lines, measurement numbers, arrows, bounding boxes, or CAD text labels from the reference image. Interpret all markings solely as physical architectural cabinetry and wall geometry.`,
       ``,
-      `2. Architectural Setting & Atmosphere: Set inside a luxury contemporary residence (${m.phrase} aesthetic). The main wall is finished in ${m.wallMaterial}. In the foreground, the floor is ${m.flooring || 'wide-plank European white oak hardwood with a subtle matte satin finish'}. The ceiling features a flush architectural shadowline reveal. ${m.atmosphere || 'Soft, diffused natural daylight enters through off-camera floor-to-ceiling sheer linen curtains, casting gentle directional window shadows across the wall.'}`,
+      settingPara,
       ``,
       `3. Materials & Craftsmanship:`,
       ...craftBulletPoints,
@@ -5206,9 +6050,13 @@ html, body {
     renderInspector();
 
     // Listen to changes to re-render inspector or update buttons
-    A.bus.on('state:changed', () => {
+    A.bus.on('state:changed', (e) => {
       renderInspector();
       updateHeaderState();
+      const r = e && e.reason;
+      if (r === 'photo' || r === 'wall' || r === 'mood' || r === 'reset' || r === 'undo' || r === 'redo') {
+        renderLeftSidebar();
+      }
     });
     A.bus.on('selection:changed', () => {
       renderInspector();
@@ -5221,6 +6069,12 @@ html, body {
     });
     A.bus.on('eyelevel:toggled', () => {
       updateToolbarState();
+    });
+    A.bus.on('ghost:toggled', () => {
+      updateToolbarState();
+    });
+    A.bus.on('photo:ready', () => {
+      renderLeftSidebar();
     });
     A.bus.on('autosave:written', () => {
       const badge = document.getElementById('badge-dirty');
@@ -5355,6 +6209,20 @@ html, body {
       '🧲 Snap'
     );
 
+    const btnGhost = U.h(
+      'button',
+      {
+        class: `btn sm ${A.canvas.isGhost() ? 'secondary' : 'ghost'}`,
+        id: 'btn-toggle-ghost',
+        title: 'See-Through Ghost Mode (G) — View wall photo and outlets behind furniture',
+        onclick: () => {
+          A.canvas.toggleGhost();
+          updateToolbarState();
+        },
+      },
+      '👻 Ghost'
+    );
+
     stageToolbar.appendChild(btnZoomOut);
     stageToolbar.appendChild(btnZoomIn);
     stageToolbar.appendChild(btnFit);
@@ -5362,6 +6230,7 @@ html, body {
     stageToolbar.appendChild(btnAnnot);
     stageToolbar.appendChild(btnEyeLevel);
     stageToolbar.appendChild(btnSnap);
+    stageToolbar.appendChild(btnGhost);
 
     updateToolbarState();
   }
@@ -5378,6 +6247,10 @@ html, body {
     const btnSnap = document.getElementById('btn-toggle-snap');
     if (btnSnap) {
       btnSnap.classList.toggle('primary', A.canvas.isSnapping());
+    }
+    const btnGhost = document.getElementById('btn-toggle-ghost');
+    if (btnGhost) {
+      btnGhost.classList.toggle('primary', A.canvas.isGhost());
     }
   }
 
@@ -5434,6 +6307,111 @@ html, body {
     wallRow.appendChild(fieldW);
     wallRow.appendChild(fieldH);
     secWall.appendChild(wallRow);
+
+    // 2b. Wall Photo Background
+    const secPhoto = U.h('div', { class: 'sidebar-section' });
+    secPhoto.appendChild(U.h('div', { class: 'section-heading' }, 'Wall Photo Background'));
+
+    const photoRef = state.wallPhoto;
+    const photoData = photoRef && A.photo ? A.photo.dataUrl(photoRef.id) : null;
+
+    if (!photoRef || !photoData) {
+      const btnUpload = U.h(
+        'button',
+        {
+          class: 'btn',
+          id: 'btn-upload-wall-photo',
+          style: { width: '100%', justifyContent: 'center' },
+          onclick: () => A.photoCalibrate.upload(),
+        },
+        '📷 Upload Wall Photo'
+      );
+      secPhoto.appendChild(btnUpload);
+      secPhoto.appendChild(
+        U.h('div', { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)', marginTop: '4px', lineHeight: '1.4' } },
+          'Use a real photo of your wall as a drafting backdrop. You will align the 4 corners to scale the wall precisely.'
+        )
+      );
+    } else {
+      const card = U.h('div', { class: 'photo-card' });
+      const thumbWrap = U.h('div', { class: 'photo-thumb-wrap' });
+      const thumb = U.h('img', { class: 'photo-thumb', src: photoData, alt: 'Wall photo background' });
+      thumbWrap.appendChild(thumb);
+      card.appendChild(thumbWrap);
+
+      // Visibility toggle & Recalibrate row
+      const rowActs = U.h('div', { class: 'form-row' });
+      const btnVis = U.h(
+        'button',
+        {
+          class: `btn sm ${photoRef.visible ? 'secondary' : 'ghost'}`,
+          style: { flex: 1, justifyContent: 'center' },
+          onclick: () => A.store.patchWallPhoto({ visible: !photoRef.visible }),
+        },
+        photoRef.visible ? '👁 Visible' : '👁‍🗨 Hidden'
+      );
+      const btnAdjust = U.h(
+        'button',
+        {
+          class: 'btn sm ghost',
+          style: { flex: 1, justifyContent: 'center' },
+          title: 'Adjust 4 corner calibration points',
+          onclick: () => A.photoCalibrate.adjust(),
+        },
+        '📐 Calibrate'
+      );
+      rowActs.appendChild(btnVis);
+      rowActs.appendChild(btnAdjust);
+      card.appendChild(rowActs);
+
+      // Replace & Delete row
+      const rowActs2 = U.h('div', { class: 'form-row' });
+      const btnReplace = U.h(
+        'button',
+        {
+          class: 'btn sm ghost',
+          style: { flex: 1, justifyContent: 'center' },
+          onclick: () => A.photoCalibrate.upload(),
+        },
+        '📷 Replace'
+      );
+      const btnRemove = U.h(
+        'button',
+        {
+          class: 'btn sm danger',
+          style: { flex: 1, justifyContent: 'center' },
+          onclick: async () => {
+            const confirmed = await confirmModal({
+              title: 'Remove Wall Photo?',
+              message: 'This will remove the photo backdrop from your project.',
+              okLabel: 'Remove Photo',
+            });
+            if (confirmed) {
+              A.store.setWallPhoto(null);
+            }
+          },
+        },
+        '🗑 Remove'
+      );
+      rowActs2.appendChild(btnReplace);
+      rowActs2.appendChild(btnRemove);
+      card.appendChild(rowActs2);
+
+      // Export option checkbox
+      const chkExport = U.h(
+        'label',
+        { style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--fs-xs)', cursor: 'pointer', marginTop: '4px' } },
+        U.h('input', {
+          type: 'checkbox',
+          checked: photoRef.showOnExport,
+          onchange: (e) => A.store.patchWallPhoto({ showOnExport: e.target.checked }),
+        }),
+        'Include photo in exported PNG'
+      );
+      card.appendChild(chkExport);
+
+      secPhoto.appendChild(card);
+    }
 
     // 3. Style & Aesthetic Mood
     const secMood = U.h('div', { class: 'sidebar-section' });
@@ -5518,6 +6496,7 @@ html, body {
 
     leftSidebar.appendChild(secProject);
     leftSidebar.appendChild(secWall);
+    leftSidebar.appendChild(secPhoto);
     leftSidebar.appendChild(secMood);
     leftSidebar.appendChild(secErgo);
     leftSidebar.appendChild(secPresets);

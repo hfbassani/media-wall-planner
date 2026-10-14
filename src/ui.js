@@ -18,9 +18,13 @@
     renderInspector();
 
     // Listen to changes to re-render inspector or update buttons
-    A.bus.on('state:changed', () => {
+    A.bus.on('state:changed', (e) => {
       renderInspector();
       updateHeaderState();
+      const r = e && e.reason;
+      if (r === 'photo' || r === 'wall' || r === 'mood' || r === 'reset' || r === 'undo' || r === 'redo') {
+        renderLeftSidebar();
+      }
     });
     A.bus.on('selection:changed', () => {
       renderInspector();
@@ -33,6 +37,12 @@
     });
     A.bus.on('eyelevel:toggled', () => {
       updateToolbarState();
+    });
+    A.bus.on('ghost:toggled', () => {
+      updateToolbarState();
+    });
+    A.bus.on('photo:ready', () => {
+      renderLeftSidebar();
     });
     A.bus.on('autosave:written', () => {
       const badge = document.getElementById('badge-dirty');
@@ -167,6 +177,20 @@
       '🧲 Snap'
     );
 
+    const btnGhost = U.h(
+      'button',
+      {
+        class: `btn sm ${A.canvas.isGhost() ? 'secondary' : 'ghost'}`,
+        id: 'btn-toggle-ghost',
+        title: 'See-Through Ghost Mode (G) — View wall photo and outlets behind furniture',
+        onclick: () => {
+          A.canvas.toggleGhost();
+          updateToolbarState();
+        },
+      },
+      '👻 Ghost'
+    );
+
     stageToolbar.appendChild(btnZoomOut);
     stageToolbar.appendChild(btnZoomIn);
     stageToolbar.appendChild(btnFit);
@@ -174,6 +198,7 @@
     stageToolbar.appendChild(btnAnnot);
     stageToolbar.appendChild(btnEyeLevel);
     stageToolbar.appendChild(btnSnap);
+    stageToolbar.appendChild(btnGhost);
 
     updateToolbarState();
   }
@@ -190,6 +215,10 @@
     const btnSnap = document.getElementById('btn-toggle-snap');
     if (btnSnap) {
       btnSnap.classList.toggle('primary', A.canvas.isSnapping());
+    }
+    const btnGhost = document.getElementById('btn-toggle-ghost');
+    if (btnGhost) {
+      btnGhost.classList.toggle('primary', A.canvas.isGhost());
     }
   }
 
@@ -246,6 +275,111 @@
     wallRow.appendChild(fieldW);
     wallRow.appendChild(fieldH);
     secWall.appendChild(wallRow);
+
+    // 2b. Wall Photo Background
+    const secPhoto = U.h('div', { class: 'sidebar-section' });
+    secPhoto.appendChild(U.h('div', { class: 'section-heading' }, 'Wall Photo Background'));
+
+    const photoRef = state.wallPhoto;
+    const photoData = photoRef && A.photo ? A.photo.dataUrl(photoRef.id) : null;
+
+    if (!photoRef || !photoData) {
+      const btnUpload = U.h(
+        'button',
+        {
+          class: 'btn',
+          id: 'btn-upload-wall-photo',
+          style: { width: '100%', justifyContent: 'center' },
+          onclick: () => A.photoCalibrate.upload(),
+        },
+        '📷 Upload Wall Photo'
+      );
+      secPhoto.appendChild(btnUpload);
+      secPhoto.appendChild(
+        U.h('div', { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)', marginTop: '4px', lineHeight: '1.4' } },
+          'Use a real photo of your wall as a drafting backdrop. You will align the 4 corners to scale the wall precisely.'
+        )
+      );
+    } else {
+      const card = U.h('div', { class: 'photo-card' });
+      const thumbWrap = U.h('div', { class: 'photo-thumb-wrap' });
+      const thumb = U.h('img', { class: 'photo-thumb', src: photoData, alt: 'Wall photo background' });
+      thumbWrap.appendChild(thumb);
+      card.appendChild(thumbWrap);
+
+      // Visibility toggle & Recalibrate row
+      const rowActs = U.h('div', { class: 'form-row' });
+      const btnVis = U.h(
+        'button',
+        {
+          class: `btn sm ${photoRef.visible ? 'secondary' : 'ghost'}`,
+          style: { flex: 1, justifyContent: 'center' },
+          onclick: () => A.store.patchWallPhoto({ visible: !photoRef.visible }),
+        },
+        photoRef.visible ? '👁 Visible' : '👁‍🗨 Hidden'
+      );
+      const btnAdjust = U.h(
+        'button',
+        {
+          class: 'btn sm ghost',
+          style: { flex: 1, justifyContent: 'center' },
+          title: 'Adjust 4 corner calibration points',
+          onclick: () => A.photoCalibrate.adjust(),
+        },
+        '📐 Calibrate'
+      );
+      rowActs.appendChild(btnVis);
+      rowActs.appendChild(btnAdjust);
+      card.appendChild(rowActs);
+
+      // Replace & Delete row
+      const rowActs2 = U.h('div', { class: 'form-row' });
+      const btnReplace = U.h(
+        'button',
+        {
+          class: 'btn sm ghost',
+          style: { flex: 1, justifyContent: 'center' },
+          onclick: () => A.photoCalibrate.upload(),
+        },
+        '📷 Replace'
+      );
+      const btnRemove = U.h(
+        'button',
+        {
+          class: 'btn sm danger',
+          style: { flex: 1, justifyContent: 'center' },
+          onclick: async () => {
+            const confirmed = await confirmModal({
+              title: 'Remove Wall Photo?',
+              message: 'This will remove the photo backdrop from your project.',
+              okLabel: 'Remove Photo',
+            });
+            if (confirmed) {
+              A.store.setWallPhoto(null);
+            }
+          },
+        },
+        '🗑 Remove'
+      );
+      rowActs2.appendChild(btnReplace);
+      rowActs2.appendChild(btnRemove);
+      card.appendChild(rowActs2);
+
+      // Export option checkbox
+      const chkExport = U.h(
+        'label',
+        { style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--fs-xs)', cursor: 'pointer', marginTop: '4px' } },
+        U.h('input', {
+          type: 'checkbox',
+          checked: photoRef.showOnExport,
+          onchange: (e) => A.store.patchWallPhoto({ showOnExport: e.target.checked }),
+        }),
+        'Include photo in exported PNG'
+      );
+      card.appendChild(chkExport);
+
+      secPhoto.appendChild(card);
+    }
 
     // 3. Style & Aesthetic Mood
     const secMood = U.h('div', { class: 'sidebar-section' });
@@ -330,6 +464,7 @@
 
     leftSidebar.appendChild(secProject);
     leftSidebar.appendChild(secWall);
+    leftSidebar.appendChild(secPhoto);
     leftSidebar.appendChild(secMood);
     leftSidebar.appendChild(secErgo);
     leftSidebar.appendChild(secPresets);

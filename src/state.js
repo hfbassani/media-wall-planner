@@ -15,7 +15,17 @@
   let txnSnapshot = null; // snapshot taken at begin()
 
   function emptyState() {
-    return { schemaVersion: SCHEMA_VERSION, name: 'Untitled media wall', wallWidth: 400, wallHeight: 280, mood: 'japandi', elements: [] };
+    return { schemaVersion: SCHEMA_VERSION, name: 'Untitled media wall', wallWidth: 400, wallHeight: 280, mood: 'japandi', wallPhoto: null, elements: [] };
+  }
+
+  /** wallPhoto is an optional reference into A.photo; image bytes never live in State. */
+  function normalizeWallPhoto(raw) {
+    if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string' || !raw.id) return null;
+    return {
+      id: raw.id.slice(0, 64),
+      visible: raw.visible !== false,
+      showOnExport: raw.showOnExport !== false,
+    };
   }
 
   /* ---------- validation / normalization ---------- */
@@ -61,6 +71,7 @@
       wallWidth: clamp(num(obj.wallWidth, 400), 50, 5000),
       wallHeight: clamp(num(obj.wallHeight, 280), 50, 2000),
       mood: V.moods[obj.mood] ? obj.mood : 'japandi',
+      wallPhoto: normalizeWallPhoto(obj.wallPhoto),
       elements: [],
     };
     const sorted = obj.elements
@@ -257,6 +268,15 @@
     setMood(id) {
       if (!V.moods[id]) return;
       update((d) => (d.mood = id), { reason: 'mood' });
+    },
+    /** Replace (or clear with null) the wall photo reference. */
+    setWallPhoto(ref) {
+      update((d) => (d.wallPhoto = normalizeWallPhoto(ref)), { reason: 'photo' });
+    },
+    /** Toggle photo flags, e.g. { visible: false }. No-op without a photo. */
+    patchWallPhoto(partial) {
+      if (!state.wallPhoto) return;
+      update((d) => (d.wallPhoto = normalizeWallPhoto(Object.assign({}, d.wallPhoto, partial))), { reason: 'photo' });
     },
 
     /* history */

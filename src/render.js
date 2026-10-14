@@ -73,9 +73,18 @@
     return pat;
   }
 
+  /** Ready photo image for this render pass, or null (no photo, hidden, excluded, or decoding). */
+  function photoFor(state, o) {
+    const p = state.wallPhoto;
+    if (!o.photo || !p || !A.photo) return null;
+    if (o.theme === 'export' ? !p.showOnExport : !p.visible) return null;
+    return A.photo.image(p.id);
+  }
+
   function drawWall(ctx, state, T, o) {
     const m = V.moods[state.mood] || V.moods.japandi;
     const x = T.x(0), y = T.y(state.wallHeight), w = state.wallWidth * T.s, h = state.wallHeight * T.s;
+    const photo = photoFor(state, o);
     ctx.save();
     if (o.theme === 'screen') {
       ctx.shadowColor = 'rgba(0,0,0,0.45)';
@@ -85,6 +94,14 @@
     ctx.fillStyle = m.wall;
     ctx.fillRect(x, y, w, h);
     ctx.restore();
+    if (photo) {
+      // The photo was rectified to the wall's aspect ratio, so it maps 1:1 onto the wall rect.
+      ctx.save();
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(photo, x, y, w, h);
+      ctx.restore();
+      return; // real photo carries its own texture and lighting
+    }
     ctx.save();
     ctx.translate(x, y);
     ctx.fillStyle = wallPattern(ctx, state.mood, T.s);
@@ -98,13 +115,14 @@
     ctx.fillRect(x, y, w, Math.min(h, 40 * T.s));
   }
 
-  function inkFor(state) {
+  function inkFor(state, o) {
     const m = V.moods[state.mood] || V.moods.japandi;
-    return U.luminance(m.wall) > 0.5 ? '0,0,0' : '255,255,255';
+    const lum = o && photoFor(state, o) ? A.photo.luminance(state.wallPhoto.id) : U.luminance(m.wall);
+    return lum > 0.5 ? '0,0,0' : '255,255,255';
   }
 
   function drawGrid(ctx, state, T, o) {
-    const ink = inkFor(state);
+    const ink = inkFor(state, o);
     const x0 = T.x(0), x1 = T.x(state.wallWidth), y0 = T.y(0), y1 = T.y(state.wallHeight);
     const levels = [
       { step: 5, alpha: 0.07, dash: [2, 3], min: 6 },
@@ -614,7 +632,7 @@
   /* ---------- public ---------- */
   function drawScene(ctx, state, opts) {
     const o = Object.assign(
-      { time: 0, grid: true, annotations: false, eyeLevel: false, eyeLevelCm: V.config.defaultEyeLevelCm, labels: true, rulers: true, selection: [], hud: true, guides: [], marquee: null, theme: 'screen', uiScale: 1, dpr: 1, background: null },
+      { time: 0, grid: true, annotations: false, eyeLevel: false, eyeLevelCm: V.config.defaultEyeLevelCm, labels: true, rulers: true, selection: [], hud: true, guides: [], marquee: null, theme: 'screen', uiScale: 1, dpr: 1, background: null, photo: true, ghost: false },
       opts
     );
     const T = makeTransform(o.pxPerCm, o.originX, o.originY);
@@ -628,6 +646,9 @@
     if (o.rulers) drawRulers(ctx, state, T, o);
 
     const textureOpts = { pxPerCm: T.s, time: o.time, mood: state.mood };
+    // Ghost mode: see outlets/switches in the photo behind the millwork. Textures multiply globalAlpha.
+    ctx.save();
+    if (o.ghost) ctx.globalAlpha = 0.4;
     for (const el of state.elements) {
       const r = T.rect(el);
       if (el.ledHalo) drawHalo(ctx, el, r, T, o);
@@ -638,6 +659,19 @@
       ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
       ctx.restore();
       if (el.ledUnderglow) drawUnderglow(ctx, el, r, T);
+    }
+    ctx.restore();
+    if (o.ghost) {
+      // Keep footprints readable while translucent.
+      ctx.save();
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.9)';
+      ctx.lineWidth = 1.25;
+      for (const el of state.elements) {
+        const r = T.rect(el);
+        ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
+      }
+      ctx.restore();
     }
     if (o.labels) for (const el of state.elements) drawLabel(ctx, el, T.rect(el), o);
     if (o.annotations) drawAnnotations(ctx, state, T, o);
