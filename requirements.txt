@@ -1,0 +1,3 @@
+# Media Wall Planner — Development Requirements
+watchdog>=4.0.0
+debugpy>=1.8.0

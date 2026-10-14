@@ -12,3 +12,10 @@ Thumbs.db
 # Scratch & Logs
 *.log
 .system_generated/
+
+# Python & Environments
+.venv/
+venv/
+__pycache__/
+*.pyc
+
