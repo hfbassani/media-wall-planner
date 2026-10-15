@@ -259,7 +259,7 @@
 
     octx.putImageData(img, 0, 0);
 
-    const bounds = {
+    const initialBounds = {
       uMin,
       uMax,
       vMin,
@@ -270,11 +270,149 @@
       hCm: spanV * wallH,
     };
 
+    const inscribed = inscribeCrop(out, initialBounds, wallW, wallH);
+    const finalCanvas = inscribed.canvas;
+    const finalBounds = inscribed.bounds;
+
     return {
-      dataUrl: out.toDataURL('image/jpeg', JPEG_QUALITY),
+      dataUrl: finalCanvas.toDataURL('image/jpeg', JPEG_QUALITY),
       luminance: lumN ? lumSum / lumN : 0.5,
-      bounds,
+      bounds: finalBounds,
     };
+  }
+
+  /**
+   * Scans a rendered or stored photo and crops it strictly to the maximal
+   * inscribed rectangle that contains 100% valid camera pixels (no empty #0b0d11 corners).
+   */
+  function inscribeCrop(canvas, bounds, wallW, wallH) {
+    if (!canvas || !bounds) return { canvas, bounds };
+    const w = canvas.width, h = canvas.height;
+    if (w <= 0 || h <= 0) return { canvas, bounds };
+    const ctx = canvas.getContext('2d');
+    const data = ctx.getImageData(0, 0, w, h).data;
+
+    function isPixelEmpty(x, y) {
+      const o = (y * w + x) * 4;
+      const a = data[o + 3];
+      if (a < 128) return true;
+      const r = data[o], g = data[o + 1], b = data[o + 2];
+      const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      // Match #0b0d11 (11, 13, 17) or pure black or dark background wedges
+      return (lum <= 22 && Math.abs(r - g) <= 10 && Math.abs(g - b) <= 12);
+    }
+
+    // Check if any corner region contains empty pixels
+    const checkStep = Math.max(1, Math.floor(Math.min(w, h) / 80));
+    let hasEmpty = false;
+    for (let s = 0; s <= checkStep * 4; s += checkStep) {
+      if (isPixelEmpty(s, s) || isPixelEmpty(w - 1 - s, s) || isPixelEmpty(s, h - 1 - s) || isPixelEmpty(w - 1 - s, h - 1 - s)) {
+        hasEmpty = true;
+        break;
+      }
+    }
+    if (!hasEmpty) return { canvas, bounds };
+
+    const { uMin, uMax, vMin, vMax } = bounds;
+    const spanU = uMax - uMin;
+    const spanV = vMax - vMin;
+
+    // Start box: normalized [0, 1]x[0, 1] (the calibrated wall) in pixel space
+    let x0 = Math.max(0, Math.min(w - 1, Math.round(((0 - uMin) / spanU) * w)));
+    let x1 = Math.max(0, Math.min(w - 1, Math.round(((1 - uMin) / spanU) * w)));
+    let y0 = Math.max(0, Math.min(h - 1, Math.round(((0 - vMin) / spanV) * h)));
+    let y1 = Math.max(0, Math.min(h - 1, Math.round(((1 - vMin) / spanV) * h)));
+
+    if (x0 > x1) { const t = x0; x0 = x1; x1 = t; }
+    if (y0 > y1) { const t = y0; y0 = y1; y1 = t; }
+
+    // Ensure initial box has no empty pixels
+    while (x0 < x1) {
+      let colEmpty = false;
+      for (let y = y0; y <= y1; y += 2) if (isPixelEmpty(x0, y)) { colEmpty = true; break; }
+      if (colEmpty) x0++; else break;
+    }
+    while (x1 > x0) {
+      let colEmpty = false;
+      for (let y = y0; y <= y1; y += 2) if (isPixelEmpty(x1, y)) { colEmpty = true; break; }
+      if (colEmpty) x1--; else break;
+    }
+    while (y0 < y1) {
+      let rowEmpty = false;
+      for (let x = x0; x <= x1; x += 2) if (isPixelEmpty(x, y0)) { rowEmpty = true; break; }
+      if (rowEmpty) y0++; else break;
+    }
+    while (y1 > y0) {
+      let rowEmpty = false;
+      for (let x = x0; x <= x1; x += 2) if (isPixelEmpty(x, y1)) { rowEmpty = true; break; }
+      if (rowEmpty) y1--; else break;
+    }
+
+    // Expand outward into valid room pixels in all 4 directions
+    let expanded = true;
+    while (expanded) {
+      expanded = false;
+
+      if (x0 > 0) {
+        let can = true;
+        for (let y = y0; y <= y1; y += 2) {
+          if (isPixelEmpty(x0 - 1, y)) { can = false; break; }
+        }
+        if (can) { x0--; expanded = true; }
+      }
+
+      if (x1 < w - 1) {
+        let can = true;
+        for (let y = y0; y <= y1; y += 2) {
+          if (isPixelEmpty(x1 + 1, y)) { can = false; break; }
+        }
+        if (can) { x1++; expanded = true; }
+      }
+
+      if (y0 > 0) {
+        let can = true;
+        for (let x = x0; x <= x1; x += 2) {
+          if (isPixelEmpty(x, y0 - 1)) { can = false; break; }
+        }
+        if (can) { y0--; expanded = true; }
+      }
+
+      if (y1 < h - 1) {
+        let can = true;
+        for (let x = x0; x <= x1; x += 2) {
+          if (isPixelEmpty(x, y1 + 1)) { can = false; break; }
+        }
+        if (can) { y1++; expanded = true; }
+      }
+    }
+
+    const cropW = x1 - x0 + 1;
+    const cropH = y1 - y0 + 1;
+    if (cropW <= 10 || cropH <= 10) return { canvas, bounds };
+
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = cropW;
+    outCanvas.height = cropH;
+    const octx = outCanvas.getContext('2d');
+    octx.drawImage(canvas, x0, y0, cropW, cropH, 0, 0, cropW, cropH);
+
+    const newUmin = uMin + (x0 / w) * spanU;
+    const newUmax = uMin + ((x1 + 1) / w) * spanU;
+    const newVmin = vMin + (y0 / h) * spanV;
+    const newVmax = vMin + ((y1 + 1) / h) * spanV;
+
+    const newBounds = {
+      uMin: newUmin,
+      uMax: newUmax,
+      vMin: newVmin,
+      vMax: newVmax,
+      xCm: newUmin * wallW,
+      yCm: (1 - newVmax) * wallH,
+      wCm: (newUmax - newUmin) * wallW,
+      hCm: (newVmax - newVmin) * wallH,
+    };
+
+    return { canvas: outCanvas, bounds: newBounds };
   }
 
   /* ---------- library ---------- */
@@ -302,6 +440,35 @@
           entry.ready = true;
           entry.aspect = img.naturalWidth / img.naturalHeight;
           if (extra.luminance == null) entry.luminance = measureLuminance(img);
+
+          // Auto-inscribe if the image contains empty corner wedges from an earlier session
+          if (entry.bounds) {
+            const st = A.store ? A.store.getState() : null;
+            const ww = (st && st.wallWidth) || 300;
+            const wh = (st && st.wallHeight) || 240;
+            const scratch = document.createElement('canvas');
+            scratch.width = img.naturalWidth;
+            scratch.height = img.naturalHeight;
+            scratch.getContext('2d').drawImage(img, 0, 0);
+            const inscribed = inscribeCrop(scratch, entry.bounds, ww, wh);
+            if (inscribed.canvas !== scratch) {
+              const croppedDataUrl = inscribed.canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+              entry.dataUrl = croppedDataUrl;
+              entry.bounds = inscribed.bounds;
+              entry.aspect = inscribed.canvas.width / inscribed.canvas.height;
+              loadImage(croppedDataUrl).then((croppedImg) => {
+                entry.img = croppedImg;
+                if (st && st.wallPhoto && st.wallPhoto.id === id) {
+                  A.store.setWallPhoto({ id, visible: st.wallPhoto.visible, showOnExport: st.wallPhoto.showOnExport, bounds: inscribed.bounds });
+                }
+                syncStorage(A.store.getState());
+                A.bus.emit('photo:ready', { id });
+                if (A.canvas) A.canvas.fit();
+              });
+              return;
+            }
+          }
+
           A.bus.emit('photo:ready', { id });
         })
         .catch(() => library.delete(id));
@@ -389,6 +556,32 @@
     if (s && s.dataUrl) register(s.dataUrl);
   }
 
+  function getInscribed(id, bounds, wallW, wallH) {
+    const entry = id && library.get(id);
+    if (!entry) return { img: null, bounds };
+    const b = bounds || entry.bounds;
+    if (!entry.ready || !entry.img || !b || !b.wCm || !b.hCm) {
+      return { img: entry.img, bounds: b };
+    }
+    const key = `${b.xCm.toFixed(1)}_${b.yCm.toFixed(1)}_${b.wCm.toFixed(1)}_${b.hCm.toFixed(1)}`;
+    if (entry._inscribed && entry._inscribedKey === key) {
+      return entry._inscribed;
+    }
+
+    const scratch = document.createElement('canvas');
+    scratch.width = entry.img.naturalWidth || entry.img.width;
+    scratch.height = entry.img.naturalHeight || entry.img.height;
+    scratch.getContext('2d').drawImage(entry.img, 0, 0);
+
+    const res = inscribeCrop(scratch, b, wallW || 300, wallH || 240);
+    entry._inscribed = {
+      img: res.canvas,
+      bounds: res.bounds,
+    };
+    entry._inscribedKey = key;
+    return entry._inscribed;
+  }
+
   A.photo = {
     pickFile,
     upload,
@@ -399,6 +592,7 @@
     register,
     restoreFromStorage,
     syncStorage,
+    getInscribed,
     has: (id) => library.has(id),
     /** Ready HTMLImageElement for drawing, or null while decoding / unknown id. */
     image: (id) => {
@@ -422,7 +616,9 @@
     },
     bounds: (id) => {
       const e = id && library.get(id);
-      return (e && e.bounds) || null;
+      if (!e) return null;
+      if (e._inscribed && e._inscribed.bounds) return e._inscribed.bounds;
+      return e.bounds || null;
     },
     /** Original photo + corners, available only in the session where it was uploaded. */
     calibration: (id) => {

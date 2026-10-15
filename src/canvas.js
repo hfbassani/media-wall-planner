@@ -44,8 +44,10 @@
     let minCmY = 0, maxCmY = state.wallHeight;
 
     if (state.wallPhoto && state.wallPhoto.visible && A.photo) {
-      const b = (state.wallPhoto && state.wallPhoto.bounds) || A.photo.bounds(state.wallPhoto.id);
-      if (b && b.wCm && b.hCm) {
+      const rawB = (state.wallPhoto && state.wallPhoto.bounds) || A.photo.bounds(state.wallPhoto.id);
+      if (rawB && rawB.wCm && rawB.hCm) {
+        const ins = A.photo.getInscribed ? A.photo.getInscribed(state.wallPhoto.id, rawB, state.wallWidth, state.wallHeight) : null;
+        const b = (ins && ins.bounds) || rawB;
         minCmX = Math.min(0, b.xCm);
         maxCmX = Math.max(state.wallWidth, b.xCm + b.wCm);
         minCmY = Math.min(0, b.yCm);
@@ -86,8 +88,10 @@
     let contentH = state.wallHeight;
 
     if (state.wallPhoto && state.wallPhoto.visible && A.photo) {
-      const b = (state.wallPhoto && state.wallPhoto.bounds) || A.photo.bounds(state.wallPhoto.id);
-      if (b && b.wCm && b.hCm) {
+      const rawB = (state.wallPhoto && state.wallPhoto.bounds) || A.photo.bounds(state.wallPhoto.id);
+      if (rawB && rawB.wCm && rawB.hCm) {
+        const ins = A.photo.getInscribed ? A.photo.getInscribed(state.wallPhoto.id, rawB, state.wallWidth, state.wallHeight) : null;
+        const b = (ins && ins.bounds) || rawB;
         const minCmX = Math.min(0, b.xCm);
         const maxCmX = Math.max(state.wallWidth, b.xCm + b.wCm);
         const minCmY = Math.min(0, b.yCm);

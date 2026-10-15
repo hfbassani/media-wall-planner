@@ -88,15 +88,23 @@
     const x = T.x(0), y = T.y(state.wallHeight), w = state.wallWidth * T.s, h = state.wallHeight * T.s;
     const photo = photoFor(state, o);
     if (photo) {
-      const b = (state.wallPhoto && state.wallPhoto.bounds) || (A.photo && A.photo.bounds(state.wallPhoto.id));
+      const rawB = (state.wallPhoto && state.wallPhoto.bounds) || (A.photo && A.photo.bounds(state.wallPhoto.id));
       let px, py, dw, dh;
+      let activePhoto = photo;
 
-      if (b && b.wCm && b.hCm) {
-        // Calibrated image with full room bounds: wall quad is aligned 1:1, surrounding room is visible!
+      if (rawB && rawB.wCm && rawB.hCm && A.photo && A.photo.getInscribed) {
+        const ins = A.photo.getInscribed(state.wallPhoto.id, rawB, state.wallWidth, state.wallHeight);
+        activePhoto = ins.img || photo;
+        const b = ins.bounds || rawB;
         px = T.x(b.xCm);
         py = T.y(b.yCm + b.hCm); // screen Y of top edge
         dw = b.wCm * T.s;
         dh = b.hCm * T.s;
+      } else if (rawB && rawB.wCm && rawB.hCm) {
+        px = T.x(rawB.xCm);
+        py = T.y(rawB.yCm + rawB.hCm);
+        dw = rawB.wCm * T.s;
+        dh = rawB.hCm * T.s;
       } else {
         // Uncalibrated raw image: anchor to floor (Y=0), scale to wall height
         const pw = photo.naturalWidth || photo.width || 1;
@@ -130,7 +138,7 @@
       roundRect(ctx, px, py, dw, dh, cornerR);
       ctx.clip();
       ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(photo, px, py, dw, dh);
+      ctx.drawImage(activePhoto, px, py, dw, dh);
       ctx.restore();
 
       // Soft architectural border around the rounded photo frame
