@@ -19,9 +19,11 @@
 
     // Listen to changes to re-render inspector or update buttons
     A.bus.on('state:changed', (e) => {
-      renderInspector();
-      updateHeaderState();
       const r = e && e.reason;
+      if (r !== 'drag') {
+        renderInspector();
+      }
+      updateHeaderState();
       if (r === 'photo' || r === 'wall' || r === 'mood' || r === 'reset' || r === 'undo' || r === 'redo') {
         renderLeftSidebar();
       }
@@ -117,7 +119,7 @@
       });
     }
 
-    if (btnExport) btnExport.addEventListener('click', () => A.exporter.downloadPNG({ widthPx: 2400 }));
+    if (btnExport) btnExport.addEventListener('click', () => A.exporter.openModal());
     if (btnStudio) btnStudio.addEventListener('click', () => A.studio.open());
 
     updateHeaderState();
@@ -290,14 +292,14 @@
           class: 'btn',
           id: 'btn-upload-wall-photo',
           style: { width: '100%', justifyContent: 'center' },
-          onclick: () => A.photoCalibrate.upload(),
+          onclick: () => A.photo.upload(),
         },
         '📷 Upload Wall Photo'
       );
       secPhoto.appendChild(btnUpload);
       secPhoto.appendChild(
         U.h('div', { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)', marginTop: '4px', lineHeight: '1.4' } },
-          'Use a real photo of your wall as a drafting backdrop. You will align the 4 corners to scale the wall precisely.'
+          'Upload a photo of your room to use as a backdrop. Displayed uncropped in the workspace.'
         )
       );
     } else {
@@ -306,6 +308,27 @@
       const thumb = U.h('img', { class: 'photo-thumb', src: photoData, alt: 'Wall photo background' });
       thumbWrap.appendChild(thumb);
       card.appendChild(thumbWrap);
+
+      // Check if photo aspect differs from wall envelope
+      const ar = A.photo ? A.photo.aspect(photoRef.id) : 1;
+      const idealW = Math.round(state.wallHeight * ar);
+      if (Math.abs(state.wallWidth - idealW) > 5) {
+        const btnMatch = U.h(
+          'button',
+          {
+            class: 'btn sm secondary',
+            style: { width: '100%', justifyContent: 'center', marginBottom: '8px' },
+            title: `Snap wall width to ${idealW} cm so the drafting envelope matches the photo aspect ratio`,
+            onclick: () => {
+              A.store.setWall({ wallWidth: idealW });
+              A.canvas.fit();
+              A.ui.toast(`Wall width updated to ${idealW} cm to match photo`, 'success');
+            },
+          },
+          `📐 Match Wall Width (${idealW} cm)`
+        );
+        card.appendChild(btnMatch);
+      }
 
       // Visibility toggle & Recalibrate row
       const rowActs = U.h('div', { class: 'form-row' });
@@ -323,7 +346,7 @@
         {
           class: 'btn sm ghost',
           style: { flex: 1, justifyContent: 'center' },
-          title: 'Adjust 4 corner calibration points',
+          title: 'Straighten perspective using 4 corner handles',
           onclick: () => A.photoCalibrate.adjust(),
         },
         '📐 Calibrate'
@@ -339,7 +362,7 @@
         {
           class: 'btn sm ghost',
           style: { flex: 1, justifyContent: 'center' },
-          onclick: () => A.photoCalibrate.upload(),
+          onclick: () => A.photo.upload(),
         },
         '📷 Replace'
       );

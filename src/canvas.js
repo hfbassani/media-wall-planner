@@ -40,12 +40,21 @@
   function getTransform() {
     const s = getPxPerCm();
     const state = A.store.getState();
-    const wallW = state.wallWidth * s;
-    const wallH = state.wallHeight * s;
+    let minCmX = 0, maxCmX = state.wallWidth;
+    let minCmY = 0, maxCmY = state.wallHeight;
 
-    // Centered with margins
-    const ox = Math.round((width - wallW) / 2 + panX);
-    const oy = Math.round((height + wallH) / 2 + panY);
+    if (state.wallPhoto && state.wallPhoto.visible && A.photo) {
+      const b = (state.wallPhoto && state.wallPhoto.bounds) || A.photo.bounds(state.wallPhoto.id);
+      if (b && b.wCm && b.hCm) {
+        minCmX = Math.min(0, b.xCm);
+        maxCmX = Math.max(state.wallWidth, b.xCm + b.wCm);
+        minCmY = Math.min(0, b.yCm);
+        maxCmY = Math.max(state.wallHeight, b.yCm + b.hCm);
+      }
+    }
+
+    const ox = Math.round(width / 2 - ((minCmX + maxCmX) * s) / 2 + panX);
+    const oy = Math.round(height / 2 + ((minCmY + maxCmY) * s) / 2 + panY);
     return A.render.makeTransform(s, ox, oy);
   }
 
@@ -73,7 +82,28 @@
     const availW = Math.max(100, width - padX * 2);
     const availH = Math.max(100, height - padY * 2);
 
-    baseScale = Math.min(availW / state.wallWidth, availH / state.wallHeight);
+    let contentW = state.wallWidth;
+    let contentH = state.wallHeight;
+
+    if (state.wallPhoto && state.wallPhoto.visible && A.photo) {
+      const b = (state.wallPhoto && state.wallPhoto.bounds) || A.photo.bounds(state.wallPhoto.id);
+      if (b && b.wCm && b.hCm) {
+        const minCmX = Math.min(0, b.xCm);
+        const maxCmX = Math.max(state.wallWidth, b.xCm + b.wCm);
+        const minCmY = Math.min(0, b.yCm);
+        const maxCmY = Math.max(state.wallHeight, b.yCm + b.hCm);
+        contentW = maxCmX - minCmX;
+        contentH = maxCmY - minCmY;
+      } else {
+        const ar = A.photo.aspect(state.wallPhoto.id);
+        if (ar > 0) {
+          const photoW = state.wallHeight * ar;
+          contentW = Math.max(contentW, photoW);
+        }
+      }
+    }
+
+    baseScale = Math.min(availW / contentW, availH / contentH);
   }
 
   function fit() {
@@ -258,24 +288,34 @@
   /* ---------- Pointer Event Handlers ---------- */
   function onPointerDown(e) {
     if (U.isTypingTarget(document.activeElement)) document.activeElement.blur();
-    canvas.setPointerCapture(e.pointerId);
-    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    // Multi-touch pinch-zoom setup
-    if (activePointers.size === 2) {
-      const pts = Array.from(activePointers.values());
-      initialPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-      initialPinchZoom = zoom;
-      dragMode = 'pinch';
-      return;
+    // Only respond to left button (0) or middle button (1)
+    if (e.button !== 0 && e.button !== 1) return;
+
+    try {
+      if (canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);
+    } catch (_) {}
+
+    // Multi-touch pinch-zoom setup (touch only, never mouse)
+    if (e.pointerType === 'touch') {
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (activePointers.size === 2) {
+        const pts = Array.from(activePointers.values());
+        initialPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        initialPinchZoom = zoom;
+        dragMode = 'pinch';
+        return;
+      }
+    } else {
+      activePointers.clear();
     }
 
     const pt = getCanvasPoint(e);
     const hit = hitTest(pt.x, pt.y);
     const sel = A.store.getSelection();
 
-    // Spacebar or middle click => pan
-    if (e.button === 1 || e.spaceKey || (e.altKey && e.button === 0)) {
+    // Middle click or Alt+click => pan
+    if (e.button === 1 || (e.altKey && e.button === 0)) {
       dragMode = 'pan';
       dragStart = { x: pt.x, y: pt.y, panX, panY };
       canvas.style.cursor = 'grabbing';
@@ -305,9 +345,15 @@
         A.store.select(hit.element.id);
       }
 
+      const currentSelected = A.store.getSelectedElements();
+      if (!currentSelected.length) {
+        dragMode = null;
+        dragStart = null;
+        return;
+      }
+
       dragMode = 'move';
       A.store.begin();
-      const currentSelected = A.store.getSelectedElements();
       dragStart = {
         startX: pt.cmX,
         startY: pt.cmY,
@@ -363,18 +409,27 @@
     }
 
     if (dragMode === 'pan') {
+      if (!dragStart) return;
       panX = dragStart.panX + (pt.x - dragStart.x);
       panY = dragStart.panY + (pt.y - dragStart.y);
       requestRedraw();
       emitView();
     } else if (dragMode === 'move') {
+      if (!dragStart || !dragStart.elements || !dragStart.elements.length) {
+        dragMode = null;
+        return;
+      }
+      const primary = dragStart.elements[0];
+      if (!primary) {
+        dragMode = null;
+        return;
+      }
+
       const rawDeltaX = pt.cmX - dragStart.startX;
       const rawDeltaY = pt.cmY - dragStart.startY;
       const state = A.store.getState();
       const excludeIds = new Set(dragStart.elements.map((e) => e.id));
 
-      // Calculate snap based on primary element (first selected)
-      const primary = dragStart.elements[0];
       const proposedX = primary.x + rawDeltaX;
       const proposedY = primary.y + rawDeltaY;
       const snapResult = calculateSnaps(primary, proposedX, proposedY, state, excludeIds);
@@ -397,6 +452,10 @@
       );
       requestRedraw();
     } else if (dragMode === 'resize') {
+      if (!dragStart || !dragStart.element) {
+        dragMode = null;
+        return;
+      }
       const hnd = dragStart.handle;
       const el = dragStart.element;
       const rawDx = pt.cmX - dragStart.startX;
@@ -445,6 +504,7 @@
       );
       requestRedraw();
     } else if (dragMode === 'marquee') {
+      if (!dragStart) return;
       const x1 = Math.min(dragStart.startX, pt.x);
       const y1 = Math.min(dragStart.startY, pt.y);
       const x2 = Math.max(dragStart.startX, pt.x);
@@ -467,11 +527,17 @@
   }
 
   function onPointerUp(e) {
-    if (activePointers.has(e.pointerId)) {
-      activePointers.delete(e.pointerId);
-    }
-    if (canvas.hasPointerCapture(e.pointerId)) {
-      canvas.releasePointerCapture(e.pointerId);
+    if (e && e.pointerId !== undefined) {
+      if (activePointers.has(e.pointerId)) {
+        activePointers.delete(e.pointerId);
+      }
+      try {
+        if (canvas && canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)) {
+          canvas.releasePointerCapture(e.pointerId);
+        }
+      } catch (_) {}
+    } else {
+      activePointers.clear();
     }
 
     if (dragMode === 'move' || dragMode === 'resize') {
@@ -483,7 +549,7 @@
     activeGuides = [];
     currentMarquee = null;
     initialPinchDist = null;
-    canvas.style.cursor = 'default';
+    if (canvas) canvas.style.cursor = 'default';
     requestRedraw();
   }
 
@@ -588,10 +654,30 @@
     canvas.addEventListener('pointercancel', onPointerUp);
     canvas.addEventListener('wheel', onWheel, { passive: false });
 
+    // Safety: global pointerup & blur to prevent stuck drags when pointer leaves canvas or window
+    window.addEventListener('pointerup', (e) => {
+      if (dragMode) onPointerUp(e);
+    });
+    window.addEventListener('pointercancel', (e) => {
+      if (dragMode) onPointerUp(e);
+    });
+    window.addEventListener('blur', () => {
+      activePointers.clear();
+      if (dragMode) onPointerUp();
+    });
+
     // Double click to reset / fit zoom
     canvas.addEventListener('dblclick', () => fit());
 
     window.addEventListener('resize', U.debounce(resize, 80));
+
+    // ResizeObserver on canvas host container so layout changes (sidebars open/close) resize immediately
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => {
+        resize();
+      });
+      ro.observe(hostEl);
+    }
 
     // Listen to store updates
     A.bus.on('state:changed', () => requestRedraw());

@@ -25,6 +25,16 @@
       id: raw.id.slice(0, 64),
       visible: raw.visible !== false,
       showOnExport: raw.showOnExport !== false,
+      bounds: raw.bounds && typeof raw.bounds === 'object' ? {
+        uMin: Number(raw.bounds.uMin) || 0,
+        uMax: Number(raw.bounds.uMax) || 1,
+        vMin: Number(raw.bounds.vMin) || 0,
+        vMax: Number(raw.bounds.vMax) || 1,
+        xCm: Number(raw.bounds.xCm) || 0,
+        yCm: Number(raw.bounds.yCm) || 0,
+        wCm: Number(raw.bounds.wCm) || 400,
+        hCm: Number(raw.bounds.hCm) || 280,
+      } : null,
     };
   }
 

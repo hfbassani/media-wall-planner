@@ -76,15 +76,81 @@
   /** Ready photo image for this render pass, or null (no photo, hidden, excluded, or decoding). */
   function photoFor(state, o) {
     const p = state.wallPhoto;
-    if (!o.photo || !p || !A.photo) return null;
+    if (o.photo === false || !p || !A.photo) return null;
+    if (o.photo === true) return A.photo.image(p.id);
     if (o.theme === 'export' ? !p.showOnExport : !p.visible) return null;
     return A.photo.image(p.id);
   }
 
   function drawWall(ctx, state, T, o) {
+    if (o.wall === false) return;
     const m = V.moods[state.mood] || V.moods.japandi;
     const x = T.x(0), y = T.y(state.wallHeight), w = state.wallWidth * T.s, h = state.wallHeight * T.s;
     const photo = photoFor(state, o);
+    if (photo) {
+      const b = (state.wallPhoto && state.wallPhoto.bounds) || (A.photo && A.photo.bounds(state.wallPhoto.id));
+      let px, py, dw, dh;
+
+      if (b && b.wCm && b.hCm) {
+        // Calibrated image with full room bounds: wall quad is aligned 1:1, surrounding room is visible!
+        px = T.x(b.xCm);
+        py = T.y(b.yCm + b.hCm); // screen Y of top edge
+        dw = b.wCm * T.s;
+        dh = b.hCm * T.s;
+      } else {
+        // Uncalibrated raw image: anchor to floor (Y=0), scale to wall height
+        const pw = photo.naturalWidth || photo.width || 1;
+        const ph = photo.naturalHeight || photo.height || 1;
+        const ar = pw / ph;
+        const cmH = state.wallHeight;
+        const cmW = cmH * ar;
+        const cmX = (state.wallWidth - cmW) / 2;
+        const cmY = 0;
+        px = T.x(cmX);
+        py = T.y(cmY + cmH);
+        dw = cmW * T.s;
+        dh = cmH * T.s;
+      }
+
+      // Draw room photo cropped with elegant rounded corners
+      const cornerR = Math.max(8, Math.min(28, Math.round(14 * (o.uiScale || 1))));
+
+      if (o.theme === 'screen') {
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+        ctx.shadowBlur = 32 * o.dpr;
+        ctx.shadowOffsetY = 10 * o.dpr;
+        ctx.fillStyle = '#141820';
+        roundRect(ctx, px, py, dw, dh, cornerR);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      ctx.save();
+      roundRect(ctx, px, py, dw, dh, cornerR);
+      ctx.clip();
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(photo, px, py, dw, dh);
+      ctx.restore();
+
+      // Soft architectural border around the rounded photo frame
+      ctx.save();
+      roundRect(ctx, px, py, dw, dh, cornerR);
+      ctx.strokeStyle = o.theme === 'export' ? 'rgba(0, 0, 0, 0.16)' : 'rgba(255, 255, 255, 0.22)';
+      ctx.lineWidth = Math.max(1, 1.5 * (o.uiScale || 1));
+      ctx.stroke();
+      ctx.restore();
+
+      // Subtle dashed border for the media wall boundary over the room photo
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+      ctx.restore();
+      return; // real photo carries its own texture and lighting
+    }
+
     ctx.save();
     if (o.theme === 'screen') {
       ctx.shadowColor = 'rgba(0,0,0,0.45)';
@@ -94,14 +160,6 @@
     ctx.fillStyle = m.wall;
     ctx.fillRect(x, y, w, h);
     ctx.restore();
-    if (photo) {
-      // The photo was rectified to the wall's aspect ratio, so it maps 1:1 onto the wall rect.
-      ctx.save();
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(photo, x, y, w, h);
-      ctx.restore();
-      return; // real photo carries its own texture and lighting
-    }
     ctx.save();
     ctx.translate(x, y);
     ctx.fillStyle = wallPattern(ctx, state.mood, T.s);
@@ -154,6 +212,7 @@
   }
 
   function drawFloor(ctx, state, T, o) {
+    if (o.floor === false) return;
     const k = o.uiScale;
     const y = T.y(0);
     const x0 = T.x(0) - 20 * k, x1 = T.x(state.wallWidth) + 20 * k;
@@ -636,7 +695,7 @@
       opts
     );
     const T = makeTransform(o.pxPerCm, o.originX, o.originY);
-    if (o.background) {
+    if (o.background && o.background !== 'transparent') {
       ctx.fillStyle = o.background;
       ctx.fillRect(0, 0, o.width, o.height);
     }

@@ -124,14 +124,29 @@
     const promptData = A.prompt.build(A.store.getState(), { format: selectedFormat, modifiers: Array.from(activeModifiers) });
     const textarea = U.h('textarea', { class: 'prompt-textarea', id: 'studio-prompt-input' }, promptData.prompt);
 
+    // Reference Image Export State for AI
+    const st = A.store.getState();
+    const hasPhotoLoaded = !!(st.wallPhoto && A.photo && A.photo.has(st.wallPhoto.id));
+    let studioIncludePhoto = hasPhotoLoaded && st.wallPhoto.visible;
+    let studioIncludeMeas = false; // clean reference by default for AI
+
+    function updateStudioPrompt() {
+      const pData = A.prompt.build(A.store.getState(), {
+        format: selectedFormat,
+        modifiers: Array.from(activeModifiers),
+        photo: studioIncludePhoto,
+      });
+      textarea.value = pData.prompt;
+    }
+
     // Quick Action Bar
     const promptActions = U.h(
       'div',
-      { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' } },
-      U.h('span', { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)' } }, `Aspect: ${promptData.aspectRatio} · Wall: ${A.store.getState().wallWidth}×${A.store.getState().wallHeight}cm`),
+      { style: { display: 'flex', flexDirection: 'column', gap: '8px' } },
       U.h(
         'div',
-        { class: 'studio-action-row' },
+        { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' } },
+        U.h('span', { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)' } }, `Aspect: ${promptData.aspectRatio} · Wall: ${st.wallWidth}×${st.wallHeight}cm`),
         U.h(
           'button',
           {
@@ -143,32 +158,131 @@
             },
           },
           selectedFormat === 'vision' ? '📋 Copy Vision Prompt' : '📋 Copy Prompt'
+        )
+      ),
+      U.h(
+        'div',
+        {
+          style: {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '8px',
+            background: 'var(--bg-2)',
+            padding: '8px 12px',
+            borderRadius: 'var(--r-md)',
+            border: '1px solid var(--line)',
+          },
+        },
+        U.h(
+          'div',
+          { style: { display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' } },
+          U.h('span', { style: { fontSize: 'var(--fs-xs)', fontWeight: '600', color: 'var(--text-1)' } }, 'Reference Image:'),
+          hasPhotoLoaded
+            ? U.h(
+                'label',
+                { class: 'export-check-label', style: { fontSize: 'var(--fs-xs)', color: 'var(--text-0)', cursor: 'pointer' } },
+                U.h('input', {
+                  type: 'checkbox',
+                  checked: studioIncludePhoto,
+                  id: 'chk-studio-photo',
+                  onchange: (e) => {
+                    studioIncludePhoto = e.target.checked;
+                    updateStudioPrompt();
+                    A.ui.toast(studioIncludePhoto ? '📷 Background photo included in AI reference' : '📷 Background photo excluded from AI reference', 'info');
+                  },
+                }),
+                '📷 Background Photo'
+              )
+            : U.h(
+                'span',
+                { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)', display: 'inline-flex', alignItems: 'center', gap: '4px' } },
+                '📷 Background Photo:',
+                U.h('span', { style: { color: 'var(--text-3)' } }, 'none loaded ·'),
+                U.h(
+                  'a',
+                  {
+                    href: '#',
+                    style: { color: 'var(--brass-strong)', textDecoration: 'underline', cursor: 'pointer' },
+                    onclick: async (e) => {
+                      e.preventDefault();
+                      if (A.photo && A.photo.pickFile) {
+                        const file = await A.photo.pickFile();
+                        if (file) {
+                          await A.photo.upload(file);
+                          renderBody();
+                        }
+                      }
+                    },
+                  },
+                  'Upload'
+                )
+              ),
+          U.h(
+            'label',
+            { class: 'export-check-label', style: { fontSize: 'var(--fs-xs)', color: 'var(--text-0)', cursor: 'pointer' } },
+            U.h('input', {
+              type: 'checkbox',
+              checked: studioIncludeMeas,
+              id: 'chk-studio-meas',
+              onchange: (e) => {
+                studioIncludeMeas = e.target.checked;
+                A.ui.toast(studioIncludeMeas ? '📐 Measurements included in reference' : '📐 Clean reference (measurements excluded)', 'info');
+              },
+            }),
+            '📐 Measurements'
+          )
         ),
         U.h(
-          'button',
-          {
-            class: 'btn ghost sm',
-            id: 'btn-download-clean-ref',
-            title: 'Download clean elevation image without CAD rulers or dimensions (ideal for Gemini / Midjourney)',
-            onclick: () => {
-              A.exporter.downloadReferencePNG();
-              A.ui.toast('Clean reference PNG downloaded!', 'info');
+          'div',
+          { style: { display: 'flex', gap: '6px', alignItems: 'center' } },
+          U.h(
+            'button',
+            {
+              class: 'btn ghost sm',
+              id: 'btn-copy-ref-image',
+              title: 'Copy reference image to clipboard to paste directly into Gemini (Cmd+V)',
+              onclick: () => {
+                A.exporter.copyToClipboard({
+                  widthPx: 2400,
+                  measurements: studioIncludeMeas,
+                  photo: studioIncludePhoto,
+                  background: '#ffffff',
+                });
+              },
             },
-          },
-          '🖼️ Clean Ref PNG'
-        ),
-        U.h(
-          'button',
-          {
-            class: 'btn ghost sm',
-            id: 'btn-download-cad-plan',
-            title: 'Download architectural elevation with dimension callouts and rulers',
-            onclick: () => {
-              A.exporter.downloadPNG({ widthPx: 2400 });
-              A.ui.toast('CAD elevation plan downloaded!', 'info');
+            '📋 Copy Image'
+          ),
+          U.h(
+            'button',
+            {
+              class: 'btn ghost sm',
+              id: 'btn-download-clean-ref',
+              title: 'Download reference image for Gemini or Midjourney',
+              onclick: () => {
+                A.exporter.downloadPNG({
+                  widthPx: 2400,
+                  measurements: studioIncludeMeas,
+                  photo: studioIncludePhoto,
+                  background: '#ffffff',
+                });
+              },
             },
-          },
-          '📐 CAD Plan'
+            '⬇️ Download PNG'
+          ),
+          U.h(
+            'button',
+            {
+              class: 'btn ghost sm',
+              id: 'btn-more-export-opts',
+              title: 'Open full Export Elevation dialog with live preview and custom options',
+              onclick: () => {
+                A.exporter.openModal();
+              },
+            },
+            '⚙️ More...'
+          )
         )
       )
     );

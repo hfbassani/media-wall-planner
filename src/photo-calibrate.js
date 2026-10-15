@@ -35,10 +35,10 @@
       let pts = corners && corners.length === 4
         ? corners.map((c) => ({ x: c.x, y: c.y }))
         : [
-            { x: sw * 0.12, y: sh * 0.12 },
-            { x: sw * 0.88, y: sh * 0.12 },
-            { x: sw * 0.88, y: sh * 0.88 },
-            { x: sw * 0.12, y: sh * 0.88 },
+            { x: 0, y: 0 },
+            { x: sw, y: 0 },
+            { x: sw, y: sh },
+            { x: 0, y: sh },
           ];
       let active = -1; // handle being dragged
       let focusIdx = 0; // handle nudged by arrow keys
@@ -316,10 +316,10 @@
       }
       function resetCorners() {
         pts = [
-          { x: sw * 0.12, y: sh * 0.12 },
-          { x: sw * 0.88, y: sh * 0.12 },
-          { x: sw * 0.88, y: sh * 0.88 },
-          { x: sw * 0.12, y: sh * 0.88 },
+          { x: 0, y: 0 },
+          { x: sw, y: 0 },
+          { x: sw, y: sh },
+          { x: 0, y: sh },
         ];
         draw();
       }
@@ -343,7 +343,14 @@
         setTimeout(() => {
           try {
             const out = A.photo.rectify(source, pts, w, h);
-            close({ corners: pts.map((p) => ({ x: p.x, y: p.y })), wallWidth: w, wallHeight: h, dataUrl: out.dataUrl, luminance: out.luminance });
+            close({
+              corners: pts.map((p) => ({ x: p.x, y: p.y })),
+              wallWidth: w,
+              wallHeight: h,
+              dataUrl: out.dataUrl,
+              luminance: out.luminance,
+              bounds: out.bounds,
+            });
           } catch (err) {
             console.error('[Arch2D] rectify failed', err);
             busy = false;
@@ -368,7 +375,13 @@
     const st = A.store.getState();
     const res = await open({ source, corners, wallWidth: st.wallWidth, wallHeight: st.wallHeight });
     if (!res) return false;
-    const id = A.photo.register(res.dataUrl, { luminance: res.luminance, source, corners: res.corners });
+    const id = A.photo.register(res.dataUrl, {
+      luminance: res.luminance,
+      source,
+      corners: res.corners,
+      bounds: res.bounds,
+      aspect: res.bounds ? res.bounds.wCm / res.bounds.hCm : res.wallWidth / res.wallHeight,
+    });
     if (!id) {
       A.ui.toast('Could not store the processed photo.', 'error');
       return false;
@@ -378,10 +391,10 @@
     if (res.wallWidth !== st.wallWidth || res.wallHeight !== st.wallHeight) {
       A.store.setWall({ wallWidth: res.wallWidth, wallHeight: res.wallHeight });
     }
-    A.store.setWallPhoto({ id, visible: true, showOnExport: prev ? prev.showOnExport : true });
+    A.store.setWallPhoto({ id, visible: true, showOnExport: prev ? prev.showOnExport : false, bounds: res.bounds });
     A.store.commit();
     A.canvas.fit();
-    A.ui.toast('Wall photo applied. Press G to see through the furniture.', 'success');
+    A.ui.toast('Wall photo calibrated. Entire room photo is visible.', 'success');
     return true;
   }
 
@@ -404,13 +417,25 @@
     return calibrateAndApply(source, null);
   }
 
-  /** Re-open calibration for the current photo (only in the session it was uploaded). */
+  /** Re-open calibration for the current photo. */
   async function adjust() {
     const p = A.store.getState().wallPhoto;
-    const cal = p && A.photo.calibration(p.id);
-    if (!cal) return upload();
-    return calibrateAndApply(cal.source, cal.corners);
+    if (!p) return upload();
+    const cal = A.photo.calibration(p.id);
+    let source = cal && cal.source;
+    if (!source) {
+      const img = A.photo.image(p.id);
+      if (!img) {
+        A.ui.toast('Photo is still loading…', 'info');
+        return false;
+      }
+      source = document.createElement('canvas');
+      source.width = img.naturalWidth || img.width;
+      source.height = img.naturalHeight || img.height;
+      source.getContext('2d').drawImage(img, 0, 0);
+    }
+    return calibrateAndApply(source, cal && cal.corners);
   }
 
-  A.photoCalibrate = { open, upload, adjust };
+  A.photoCalibrate = { open, upload, adjust, pickFile };
 })();

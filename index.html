@@ -263,6 +263,17 @@ html, body {
   position: relative;
   display: inline-block;
 }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* Sidebars */
 .sidebar {
@@ -570,6 +581,122 @@ html, body {
   object-fit: cover;
   display: block;
 }
+
+/* Export Dialog / Modal */
+.export-modal {
+  width: 95vw;
+  max-width: 1040px;
+  height: 86vh;
+  max-height: 760px;
+}
+.export-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+.export-preview-pane {
+  flex: 1;
+  position: relative;
+  background: #07090c;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  overflow: hidden;
+  gap: var(--sp-2);
+}
+.export-checkerboard {
+  position: relative;
+  max-width: 100%;
+  max-height: calc(100% - 32px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background-image: linear-gradient(45deg, #181c24 25%, transparent 25%),
+    linear-gradient(-45deg, #181c24 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #181c24 75%),
+    linear-gradient(-45deg, transparent 75%, #181c24 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+  background-color: #0d1015;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.export-preview-canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.export-dim-pill {
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+.export-side {
+  width: 340px;
+  background: var(--bg-1);
+  border-left: 1px solid var(--line);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  overflow-y: auto;
+}
+.export-presets-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.export-opt-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-2);
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.export-opt-title {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-2);
+  margin-bottom: 2px;
+}
+.export-check-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--text-0);
+  cursor: pointer;
+  user-select: none;
+}
+.export-check-label input[type="checkbox"],
+.export-check-label input[type="radio"] {
+  cursor: pointer;
+  accent-color: var(--brass-strong);
+}
+.export-btn-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+
+#export-backdrop {
+  z-index: 1200;
+}
+
 
 </style>
 <style>
@@ -921,12 +1048,11 @@ html, body {
           <button class="btn ghost" id="btn-undo" title="Undo (Ctrl/Cmd+Z)" aria-label="Undo">↶</button>
           <button class="btn ghost" id="btn-redo" title="Redo (Ctrl/Cmd+Shift+Z)" aria-label="Redo">↷</button>
         </div>
-        <label class="select-wrap" for="select-template">
-          <span class="sr-only">Templates</span>
-          <select id="select-template" class="select">
+        <div class="select-wrap">
+          <select id="select-template" class="select" aria-label="Template designs">
             <option value="">Templates…</option>
           </select>
-        </label>
+        </div>
         <button class="btn" id="btn-save" title="Save project (Ctrl/Cmd+S)">💾 <span class="hide-sm">Save</span></button>
         <button class="btn" id="btn-load" title="Load project">📂 <span class="hide-sm">Load</span></button>
         <input type="file" id="input-load" accept=".json,.arch2d.json,application/json" hidden />
@@ -1283,6 +1409,16 @@ html, body {
       id: raw.id.slice(0, 64),
       visible: raw.visible !== false,
       showOnExport: raw.showOnExport !== false,
+      bounds: raw.bounds && typeof raw.bounds === 'object' ? {
+        uMin: Number(raw.bounds.uMin) || 0,
+        uMax: Number(raw.bounds.uMax) || 1,
+        vMin: Number(raw.bounds.vMin) || 0,
+        vMax: Number(raw.bounds.vMax) || 1,
+        xCm: Number(raw.bounds.xCm) || 0,
+        yCm: Number(raw.bounds.yCm) || 0,
+        wCm: Number(raw.bounds.wCm) || 400,
+        hCm: Number(raw.bounds.hCm) || 280,
+      } : null,
     };
   }
 
@@ -1753,7 +1889,19 @@ html, body {
   // id -> { dataUrl, img, ready, luminance, source?: HTMLCanvasElement, corners?: [{x,y}×4] }
   const library = new Map();
 
-  /* ---------- decoding ---------- */
+  /* ---------- decoding & ingestion ---------- */
+  function pickFile() {
+    return new Promise((resolve) => {
+      const input = Object.assign(document.createElement('input'), {
+        type: 'file',
+        accept: 'image/jpeg,image/png,image/webp,image/heic,image/heif,image/*',
+      });
+      input.addEventListener('change', () => resolve((input.files && input.files[0]) || null));
+      input.addEventListener('cancel', () => resolve(null));
+      input.click();
+    });
+  }
+
   function loadImage(src) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -1763,7 +1911,7 @@ html, body {
     });
   }
 
-  /** File → downscaled source canvas used by the calibration modal. Browsers apply EXIF orientation. */
+  /** File → downscaled source canvas. Browsers apply EXIF orientation. */
   async function ingest(file) {
     if (!file || !/^image\//.test(file.type || 'image/')) throw new Error('not-image');
     const url = URL.createObjectURL(file);
@@ -1777,6 +1925,30 @@ html, body {
       return c;
     } finally {
       URL.revokeObjectURL(url);
+    }
+  }
+
+  /** Direct upload flow: shows full uncropped photo in the black workspace immediately. */
+  async function upload() {
+    try {
+      const file = await pickFile();
+      if (!file) return null;
+      const source = await ingest(file);
+      const dataUrl = source.toDataURL('image/jpeg', JPEG_QUALITY);
+      const id = register(dataUrl, {
+        source,
+        aspect: source.width / source.height,
+        luminance: measureLuminanceCanvas(source),
+      });
+      if (!id) throw new Error('register-failed');
+      A.store.setWallPhoto({ id, visible: true, showOnExport: false });
+      if (A.ui) A.ui.toast('📷 Wall photo loaded as background', 'success');
+      if (A.canvas) A.canvas.fit();
+      return id;
+    } catch (err) {
+      console.error('[Arch2D] photo upload failed', err);
+      if (A.ui) A.ui.toast('Could not load photo. Please choose a JPEG or PNG.', 'error');
+      return null;
     }
   }
 
@@ -1815,14 +1987,99 @@ html, body {
   }
 
   /**
-   * Warp the quad of `source` into a flat image with the wall's aspect ratio.
-   * Inverse mapping with bilinear sampling; runs once per calibration (~100–250 ms).
+   * Warps the entire source photo using the perspective homography defined by `corners` -> wall rectangle.
+   * Unlike a naive crop, the wall quad aligns to [0, 1]x[0, 1], while the ENTIRE rest of the room
+   * (ceiling, floor, adjacent walls) remains 100% visible around the wall!
    */
   function rectify(source, corners, wallW, wallH) {
-    const aspect = wallW / wallH;
-    const outW = aspect >= 1 ? OUTPUT_MAX : Math.round(OUTPUT_MAX * aspect);
-    const outH = aspect >= 1 ? Math.round(OUTPUT_MAX / aspect) : OUTPUT_MAX;
     const sw = source.width, sh = source.height;
+    const [p0, p1, p2, p3] = corners;
+
+    // 1. Forward homography H: (u, v) -> (x, y)
+    const dx1 = p1.x - p2.x, dx2 = p3.x - p2.x, dx3 = p0.x - p1.x + p2.x - p3.x;
+    const dy1 = p1.y - p2.y, dy2 = p3.y - p2.y, dy3 = p0.y - p1.y + p2.y - p3.y;
+    let g = 0, h = 0;
+    if (Math.abs(dx3) > 1e-9 || Math.abs(dy3) > 1e-9) {
+      const den = dx1 * dy2 - dx2 * dy1;
+      g = (dx3 * dy2 - dx2 * dy3) / den;
+      h = (dx1 * dy3 - dx3 * dy1) / den;
+    }
+    const a = p1.x - p0.x + g * p1.x, b = p3.x - p0.x + h * p3.x, c = p0.x;
+    const d = p1.y - p0.y + g * p1.y, e = p3.y - p0.y + h * p3.y, f = p0.y;
+
+    // 2. Inverse homography Hinv: (x, y) -> (u, v)
+    const m00 = e - f * h, m01 = c * h - b, m02 = b * f - c * e;
+    const m10 = f * g - d, m11 = a - c * g, m12 = c * d - a * f;
+    const m20 = d * h - e * g, m21 = b * g - a * h, m22 = a * e - b * d;
+    const det = a * m00 + b * m10 + c * m20;
+
+    function invertPoint(px, py) {
+      if (Math.abs(det) < 1e-12) return { u: px / sw, v: py / sh };
+      let w = m20 * px + m21 * py + m22;
+      let u = m00 * px + m01 * py + m02;
+      let v = m10 * px + m11 * py + m12;
+      if (det < 0) { w = -w; u = -u; v = -v; }
+      if (w <= 1e-6) w = 1e-6;
+      return { u: u / w, v: v / w };
+    }
+
+    // 3. Find the maximal inner crop containing the wall [0, 1] x [0, 1]
+    // that contains 100% valid photo pixels with ZERO empty / askewed areas.
+    const pad = 1.0;
+    const halfPlanes = [
+      { A: a - pad * g, B: b - pad * h, C: c - pad }, // x >= pad
+      { A: (sw - pad) * g - a, B: (sw - pad) * h - b, C: (sw - pad) - c }, // x <= sw - pad
+      { A: d - pad * g, B: e - pad * h, C: f - pad }, // y >= pad
+      { A: (sh - pad) * g - d, B: (sh - pad) * h - e, C: (sh - pad) - f }, // y <= sh - pad
+      { A: g, B: h, C: 1 - 0.05 } // w >= 0.05
+    ];
+
+    function getLimits(u0, u1, v0, v1) {
+      let uMinLim = -10, uMaxLim = 10, vMinLim = -10, vMaxLim = 10;
+      for (let k = 0; k < halfPlanes.length; k++) {
+        const hp = halfPlanes[k];
+        const vTerm = Math.min(hp.B * v0, hp.B * v1);
+        const uTerm = Math.min(hp.A * u0, hp.A * u1);
+        if (hp.A > 1e-7) {
+          const bound = -(vTerm + hp.C) / hp.A;
+          if (bound > uMinLim) uMinLim = bound;
+        } else if (hp.A < -1e-7) {
+          const bound = (vTerm + hp.C) / (-hp.A);
+          if (bound < uMaxLim) uMaxLim = bound;
+        }
+        if (hp.B > 1e-7) {
+          const bound = -(uTerm + hp.C) / hp.B;
+          if (bound > vMinLim) vMinLim = bound;
+        } else if (hp.B < -1e-7) {
+          const bound = (uTerm + hp.C) / (-hp.B);
+          if (bound < vMaxLim) vMaxLim = bound;
+        }
+      }
+      return { uMinLim, uMaxLim, vMinLim, vMaxLim };
+    }
+
+    let uMin = 0, uMax = 1, vMin = 0, vMax = 1;
+    for (let iter = 0; iter < 40; iter++) {
+      const lim = getLimits(uMin, uMax, vMin, vMax);
+      if (lim.uMinLim < uMin) uMin += (lim.uMinLim - uMin) * 0.25;
+      if (lim.uMaxLim > uMax) uMax += (lim.uMaxLim - uMax) * 0.25;
+      if (lim.vMinLim < vMin) vMin += (lim.vMinLim - vMin) * 0.25;
+      if (lim.vMaxLim > vMax) vMax += (lim.vMaxLim - vMax) * 0.25;
+    }
+
+    const finalLim = getLimits(uMin, uMax, vMin, vMax);
+    if (uMin < finalLim.uMinLim) uMin = finalLim.uMinLim;
+    if (uMax > finalLim.uMaxLim) uMax = finalLim.uMaxLim;
+    if (vMin < finalLim.vMinLim) vMin = finalLim.vMinLim;
+    if (vMax > finalLim.vMaxLim) vMax = finalLim.vMaxLim;
+
+    const spanU = uMax - uMin;
+    const spanV = vMax - vMin;
+
+    const aspect = (spanU * wallW) / (spanV * wallH);
+    const outW = aspect >= 1 ? OUTPUT_MAX : Math.max(300, Math.round(OUTPUT_MAX * aspect));
+    const outH = aspect >= 1 ? Math.max(300, Math.round(OUTPUT_MAX / aspect)) : OUTPUT_MAX;
+
     const src = source.getContext('2d').getImageData(0, 0, sw, sh).data;
     const out = document.createElement('canvas');
     out.width = outW;
@@ -1830,22 +2087,33 @@ html, body {
     const octx = out.getContext('2d');
     const img = octx.createImageData(outW, outH);
     const dst = img.data;
-    const map = squareToQuad(corners);
+
     let lumSum = 0, lumN = 0;
 
     for (let j = 0; j < outH; j++) {
-      const v = (j + 0.5) / outH;
+      const v = vMin + ((j + 0.5) / outH) * spanV;
       for (let i = 0; i < outW; i++) {
-        const p = map((i + 0.5) / outW, v);
+        const u = uMin + ((i + 0.5) / outW) * spanU;
+        const w = g * u + h * v + 1;
         const o = (j * outW + i) * 4;
-        const x = p.x - 0.5, y = p.y - 0.5;
-        const x0 = Math.floor(x), y0 = Math.floor(y);
-        if (x0 < 0 || y0 < 0 || x0 + 1 >= sw || y0 + 1 >= sh) {
-          // Corner dragged past the photo edge: neutral grey fill.
-          dst[o] = dst[o + 1] = dst[o + 2] = 128;
-          dst[o + 3] = 255;
+
+        if (w <= 0.001) {
+          // Beyond horizon: seamless workspace background #0b0d11
+          dst[o] = 11; dst[o + 1] = 13; dst[o + 2] = 17; dst[o + 3] = 255;
           continue;
         }
+
+        const px = (a * u + b * v + c) / w;
+        const py = (d * u + e * v + f) / w;
+        const x = px - 0.5, y = py - 0.5;
+        const x0 = Math.floor(x), y0 = Math.floor(y);
+
+        if (x0 < 0 || y0 < 0 || x0 + 1 >= sw || y0 + 1 >= sh) {
+          // Outside source photo: seamless workspace background #0b0d11
+          dst[o] = 11; dst[o + 1] = 13; dst[o + 2] = 17; dst[o + 3] = 255;
+          continue;
+        }
+
         const fx = x - x0, fy = y - y0;
         const i00 = (y0 * sw + x0) * 4, i10 = i00 + 4, i01 = i00 + sw * 4, i11 = i01 + 4;
         for (let ch = 0; ch < 3; ch++) {
@@ -1854,14 +2122,33 @@ html, body {
           dst[o + ch] = top + (bot - top) * fy;
         }
         dst[o + 3] = 255;
-        if ((i & 15) === 0 && (j & 15) === 0) {
+
+        // Luminance sampled within the wall envelope [0, 1]x[0, 1]
+        if (u >= 0 && u <= 1 && v >= 0 && v <= 1 && (i & 15) === 0 && (j & 15) === 0) {
           lumSum += (0.2126 * dst[o] + 0.7152 * dst[o + 1] + 0.0722 * dst[o + 2]) / 255;
           lumN++;
         }
       }
     }
+
     octx.putImageData(img, 0, 0);
-    return { dataUrl: out.toDataURL('image/jpeg', JPEG_QUALITY), luminance: lumN ? lumSum / lumN : 0.5 };
+
+    const bounds = {
+      uMin,
+      uMax,
+      vMin,
+      vMax,
+      xCm: uMin * wallW,
+      yCm: (1 - vMax) * wallH,
+      wCm: spanU * wallW,
+      hCm: spanV * wallH,
+    };
+
+    return {
+      dataUrl: out.toDataURL('image/jpeg', JPEG_QUALITY),
+      luminance: lumN ? lumSum / lumN : 0.5,
+      bounds,
+    };
   }
 
   /* ---------- library ---------- */
@@ -1869,24 +2156,38 @@ html, body {
     return 'ph_' + U.hashString(dataUrl).toString(36) + dataUrl.length.toString(36);
   }
 
-  /** Adds a rectified data URL to the library and returns its id. Safe to call repeatedly. */
+  /** Adds a data URL to the library and returns its id. Safe to call repeatedly. */
   function register(dataUrl, extra = {}) {
     if (typeof dataUrl !== 'string' || !/^data:image\/(jpeg|png|webp);base64,/.test(dataUrl)) return null;
     const id = idFor(dataUrl);
     let entry = library.get(id);
     if (!entry) {
-      entry = { dataUrl, img: null, ready: false, luminance: extra.luminance == null ? 0.5 : extra.luminance };
+      entry = {
+        dataUrl,
+        img: null,
+        ready: false,
+        aspect: extra.aspect || 1,
+        luminance: extra.luminance == null ? 0.5 : extra.luminance,
+      };
       library.set(id, entry);
       loadImage(dataUrl)
         .then((img) => {
           entry.img = img;
           entry.ready = true;
+          entry.aspect = img.naturalWidth / img.naturalHeight;
           if (extra.luminance == null) entry.luminance = measureLuminance(img);
           A.bus.emit('photo:ready', { id });
         })
         .catch(() => library.delete(id));
     }
-    if (extra.source) entry.source = extra.source;
+    if (extra.source) {
+      entry.source = extra.source;
+      if (extra.source.width && extra.source.height) {
+        entry.aspect = extra.source.width / extra.source.height;
+      }
+    }
+    if (extra.aspect) entry.aspect = extra.aspect;
+    if (extra.bounds) entry.bounds = extra.bounds;
     if (extra.corners) entry.corners = extra.corners.map((c) => ({ x: c.x, y: c.y }));
     return id;
   }
@@ -1900,6 +2201,23 @@ html, body {
     let s = 0;
     for (let i = 0; i < d.length; i += 4) s += (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255;
     return s / 256;
+  }
+
+  function measureLuminanceCanvas(canvas) {
+    try {
+      const sw = canvas.width, sh = canvas.height;
+      const ctx = canvas.getContext('2d');
+      const d = ctx.getImageData(0, 0, sw, sh).data;
+      let s = 0, n = 0;
+      const step = Math.max(1, Math.floor(d.length / 4 / 256));
+      for (let i = 0; i < d.length; i += step * 4) {
+        s += (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255;
+        n++;
+      }
+      return n ? s / n : 0.5;
+    } catch (e) {
+      return 0.5;
+    }
   }
 
   /* ---------- storage (one localStorage slot for the current photo) ---------- */
@@ -1946,6 +2264,8 @@ html, body {
   }
 
   A.photo = {
+    pickFile,
+    upload,
     ingest,
     rectify,
     isConvexQuad,
@@ -1959,6 +2279,13 @@ html, body {
       const e = id && library.get(id);
       return e && e.ready ? e.img : null;
     },
+    aspect: (id) => {
+      const e = id && library.get(id);
+      if (!e) return 1;
+      if (e.img && e.img.naturalWidth && e.img.naturalHeight) return e.img.naturalWidth / e.img.naturalHeight;
+      if (e.source && e.source.width && e.source.height) return e.source.width / e.source.height;
+      return e.aspect || 1;
+    },
     dataUrl: (id) => {
       const e = id && library.get(id);
       return e ? e.dataUrl : null;
@@ -1966,6 +2293,10 @@ html, body {
     luminance: (id) => {
       const e = id && library.get(id);
       return e ? e.luminance : 0.5;
+    },
+    bounds: (id) => {
+      const e = id && library.get(id);
+      return (e && e.bounds) || null;
     },
     /** Original photo + corners, available only in the session where it was uploaded. */
     calibration: (id) => {
@@ -2016,10 +2347,10 @@ html, body {
       let pts = corners && corners.length === 4
         ? corners.map((c) => ({ x: c.x, y: c.y }))
         : [
-            { x: sw * 0.12, y: sh * 0.12 },
-            { x: sw * 0.88, y: sh * 0.12 },
-            { x: sw * 0.88, y: sh * 0.88 },
-            { x: sw * 0.12, y: sh * 0.88 },
+            { x: 0, y: 0 },
+            { x: sw, y: 0 },
+            { x: sw, y: sh },
+            { x: 0, y: sh },
           ];
       let active = -1; // handle being dragged
       let focusIdx = 0; // handle nudged by arrow keys
@@ -2297,10 +2628,10 @@ html, body {
       }
       function resetCorners() {
         pts = [
-          { x: sw * 0.12, y: sh * 0.12 },
-          { x: sw * 0.88, y: sh * 0.12 },
-          { x: sw * 0.88, y: sh * 0.88 },
-          { x: sw * 0.12, y: sh * 0.88 },
+          { x: 0, y: 0 },
+          { x: sw, y: 0 },
+          { x: sw, y: sh },
+          { x: 0, y: sh },
         ];
         draw();
       }
@@ -2324,7 +2655,14 @@ html, body {
         setTimeout(() => {
           try {
             const out = A.photo.rectify(source, pts, w, h);
-            close({ corners: pts.map((p) => ({ x: p.x, y: p.y })), wallWidth: w, wallHeight: h, dataUrl: out.dataUrl, luminance: out.luminance });
+            close({
+              corners: pts.map((p) => ({ x: p.x, y: p.y })),
+              wallWidth: w,
+              wallHeight: h,
+              dataUrl: out.dataUrl,
+              luminance: out.luminance,
+              bounds: out.bounds,
+            });
           } catch (err) {
             console.error('[Arch2D] rectify failed', err);
             busy = false;
@@ -2349,7 +2687,13 @@ html, body {
     const st = A.store.getState();
     const res = await open({ source, corners, wallWidth: st.wallWidth, wallHeight: st.wallHeight });
     if (!res) return false;
-    const id = A.photo.register(res.dataUrl, { luminance: res.luminance, source, corners: res.corners });
+    const id = A.photo.register(res.dataUrl, {
+      luminance: res.luminance,
+      source,
+      corners: res.corners,
+      bounds: res.bounds,
+      aspect: res.bounds ? res.bounds.wCm / res.bounds.hCm : res.wallWidth / res.wallHeight,
+    });
     if (!id) {
       A.ui.toast('Could not store the processed photo.', 'error');
       return false;
@@ -2359,10 +2703,10 @@ html, body {
     if (res.wallWidth !== st.wallWidth || res.wallHeight !== st.wallHeight) {
       A.store.setWall({ wallWidth: res.wallWidth, wallHeight: res.wallHeight });
     }
-    A.store.setWallPhoto({ id, visible: true, showOnExport: prev ? prev.showOnExport : true });
+    A.store.setWallPhoto({ id, visible: true, showOnExport: prev ? prev.showOnExport : false, bounds: res.bounds });
     A.store.commit();
     A.canvas.fit();
-    A.ui.toast('Wall photo applied. Press G to see through the furniture.', 'success');
+    A.ui.toast('Wall photo calibrated. Entire room photo is visible.', 'success');
     return true;
   }
 
@@ -2385,15 +2729,27 @@ html, body {
     return calibrateAndApply(source, null);
   }
 
-  /** Re-open calibration for the current photo (only in the session it was uploaded). */
+  /** Re-open calibration for the current photo. */
   async function adjust() {
     const p = A.store.getState().wallPhoto;
-    const cal = p && A.photo.calibration(p.id);
-    if (!cal) return upload();
-    return calibrateAndApply(cal.source, cal.corners);
+    if (!p) return upload();
+    const cal = A.photo.calibration(p.id);
+    let source = cal && cal.source;
+    if (!source) {
+      const img = A.photo.image(p.id);
+      if (!img) {
+        A.ui.toast('Photo is still loading…', 'info');
+        return false;
+      }
+      source = document.createElement('canvas');
+      source.width = img.naturalWidth || img.width;
+      source.height = img.naturalHeight || img.height;
+      source.getContext('2d').drawImage(img, 0, 0);
+    }
+    return calibrateAndApply(source, cal && cal.corners);
   }
 
-  A.photoCalibrate = { open, upload, adjust };
+  A.photoCalibrate = { open, upload, adjust, pickFile };
 })();
 </script>
 <script>
@@ -2897,15 +3253,81 @@ html, body {
   /** Ready photo image for this render pass, or null (no photo, hidden, excluded, or decoding). */
   function photoFor(state, o) {
     const p = state.wallPhoto;
-    if (!o.photo || !p || !A.photo) return null;
+    if (o.photo === false || !p || !A.photo) return null;
+    if (o.photo === true) return A.photo.image(p.id);
     if (o.theme === 'export' ? !p.showOnExport : !p.visible) return null;
     return A.photo.image(p.id);
   }
 
   function drawWall(ctx, state, T, o) {
+    if (o.wall === false) return;
     const m = V.moods[state.mood] || V.moods.japandi;
     const x = T.x(0), y = T.y(state.wallHeight), w = state.wallWidth * T.s, h = state.wallHeight * T.s;
     const photo = photoFor(state, o);
+    if (photo) {
+      const b = (state.wallPhoto && state.wallPhoto.bounds) || (A.photo && A.photo.bounds(state.wallPhoto.id));
+      let px, py, dw, dh;
+
+      if (b && b.wCm && b.hCm) {
+        // Calibrated image with full room bounds: wall quad is aligned 1:1, surrounding room is visible!
+        px = T.x(b.xCm);
+        py = T.y(b.yCm + b.hCm); // screen Y of top edge
+        dw = b.wCm * T.s;
+        dh = b.hCm * T.s;
+      } else {
+        // Uncalibrated raw image: anchor to floor (Y=0), scale to wall height
+        const pw = photo.naturalWidth || photo.width || 1;
+        const ph = photo.naturalHeight || photo.height || 1;
+        const ar = pw / ph;
+        const cmH = state.wallHeight;
+        const cmW = cmH * ar;
+        const cmX = (state.wallWidth - cmW) / 2;
+        const cmY = 0;
+        px = T.x(cmX);
+        py = T.y(cmY + cmH);
+        dw = cmW * T.s;
+        dh = cmH * T.s;
+      }
+
+      // Draw room photo cropped with elegant rounded corners
+      const cornerR = Math.max(8, Math.min(28, Math.round(14 * (o.uiScale || 1))));
+
+      if (o.theme === 'screen') {
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+        ctx.shadowBlur = 32 * o.dpr;
+        ctx.shadowOffsetY = 10 * o.dpr;
+        ctx.fillStyle = '#141820';
+        roundRect(ctx, px, py, dw, dh, cornerR);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      ctx.save();
+      roundRect(ctx, px, py, dw, dh, cornerR);
+      ctx.clip();
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(photo, px, py, dw, dh);
+      ctx.restore();
+
+      // Soft architectural border around the rounded photo frame
+      ctx.save();
+      roundRect(ctx, px, py, dw, dh, cornerR);
+      ctx.strokeStyle = o.theme === 'export' ? 'rgba(0, 0, 0, 0.16)' : 'rgba(255, 255, 255, 0.22)';
+      ctx.lineWidth = Math.max(1, 1.5 * (o.uiScale || 1));
+      ctx.stroke();
+      ctx.restore();
+
+      // Subtle dashed border for the media wall boundary over the room photo
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+      ctx.restore();
+      return; // real photo carries its own texture and lighting
+    }
+
     ctx.save();
     if (o.theme === 'screen') {
       ctx.shadowColor = 'rgba(0,0,0,0.45)';
@@ -2915,14 +3337,6 @@ html, body {
     ctx.fillStyle = m.wall;
     ctx.fillRect(x, y, w, h);
     ctx.restore();
-    if (photo) {
-      // The photo was rectified to the wall's aspect ratio, so it maps 1:1 onto the wall rect.
-      ctx.save();
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(photo, x, y, w, h);
-      ctx.restore();
-      return; // real photo carries its own texture and lighting
-    }
     ctx.save();
     ctx.translate(x, y);
     ctx.fillStyle = wallPattern(ctx, state.mood, T.s);
@@ -2975,6 +3389,7 @@ html, body {
   }
 
   function drawFloor(ctx, state, T, o) {
+    if (o.floor === false) return;
     const k = o.uiScale;
     const y = T.y(0);
     const x0 = T.x(0) - 20 * k, x1 = T.x(state.wallWidth) + 20 * k;
@@ -3457,7 +3872,7 @@ html, body {
       opts
     );
     const T = makeTransform(o.pxPerCm, o.originX, o.originY);
-    if (o.background) {
+    if (o.background && o.background !== 'transparent') {
       ctx.fillStyle = o.background;
       ctx.fillRect(0, 0, o.width, o.height);
     }
@@ -3524,19 +3939,54 @@ html, body {
 
   function renderCanvas(opts = {}) {
     const state = A.store.getState();
-    const widthPx = Math.max(1200, opts.widthPx || 2400);
-    const aspect = state.wallWidth / state.wallHeight;
+    const widthPx = Math.max(600, opts.widthPx || 2400);
+
+    // Measurements master toggle & individual overrides
+    const hasMeasurements = opts.measurements !== undefined ? !!opts.measurements : (opts.annotations !== false);
+    const hasAnnotations = opts.annotations !== undefined ? !!opts.annotations : hasMeasurements;
+    const hasRulers = opts.rulers !== undefined ? !!opts.rulers : hasMeasurements;
+    const hasLabels = opts.labels !== undefined ? !!opts.labels : hasMeasurements;
+
+    // Background type: 'white' | 'transparent' | 'dark'
+    let bg = opts.background;
+    if (opts.bgType === 'transparent' || bg === 'transparent' || bg === null) {
+      bg = null;
+    } else if (opts.bgType === 'dark') {
+      bg = '#0b0d11';
+    } else if (opts.bgType === 'white') {
+      bg = '#ffffff';
+    } else if (bg === undefined) {
+      bg = '#ffffff';
+    }
+
+    // Photo toggle
+    const hasPhoto = opts.photo !== undefined ? !!opts.photo : (state.wallPhoto ? state.wallPhoto.showOnExport : false);
 
     // Allocate padding for rulers, annotations, and floor baseline
-    const hasRulers = opts.rulers !== false;
     const padTop = Math.round(widthPx * 0.05);
-    const padBottom = hasRulers ? Math.round(widthPx * 0.09) : Math.round(widthPx * 0.05);
+    const padBottom = (hasRulers || (opts.floor !== false)) ? Math.round(widthPx * 0.09) : Math.round(widthPx * 0.05);
     const padLeft = hasRulers ? Math.round(widthPx * 0.07) : Math.round(widthPx * 0.04);
     const padRight = hasRulers ? Math.round(widthPx * 0.07) : Math.round(widthPx * 0.04);
 
+    let minCmX = 0, maxCmX = state.wallWidth;
+    let minCmY = 0, maxCmY = state.wallHeight;
+
+    if (hasPhoto && state.wallPhoto && A.photo) {
+      const b = (state.wallPhoto && state.wallPhoto.bounds) || A.photo.bounds(state.wallPhoto.id);
+      if (b && b.wCm && b.hCm) {
+        minCmX = Math.min(0, b.xCm);
+        maxCmX = Math.max(state.wallWidth, b.xCm + b.wCm);
+        minCmY = Math.min(0, b.yCm);
+        maxCmY = Math.max(state.wallHeight, b.yCm + b.hCm);
+      }
+    }
+
+    const totalCmW = Math.max(10, maxCmX - minCmX);
+    const totalCmH = Math.max(10, maxCmY - minCmY);
+
     const wallDrawWidth = widthPx - padLeft - padRight;
-    const pxPerCm = wallDrawWidth / state.wallWidth;
-    const wallDrawHeight = state.wallHeight * pxPerCm;
+    const pxPerCm = wallDrawWidth / totalCmW;
+    const wallDrawHeight = totalCmH * pxPerCm;
     const heightPx = Math.round(padTop + wallDrawHeight + padBottom);
 
     const canvas = document.createElement('canvas');
@@ -3546,8 +3996,8 @@ html, body {
 
     // UI scale relative to standard 800px viewport
     const uiScale = Math.max(1, widthPx / 1000);
-    const originX = padLeft;
-    const originY = padTop + wallDrawHeight;
+    const originX = padLeft - minCmX * pxPerCm;
+    const originY = padTop + maxCmY * pxPerCm;
 
     A.render.drawScene(ctx, state, {
       pxPerCm,
@@ -3556,10 +4006,10 @@ html, body {
       width: widthPx,
       height: heightPx,
       grid: !!opts.grid,
-      annotations: opts.annotations !== undefined ? !!opts.annotations : true,
-      eyeLevel: opts.eyeLevel !== undefined ? !!opts.eyeLevel : (A.canvas ? A.canvas.isEyeLevel() : false),
+      annotations: hasAnnotations,
+      eyeLevel: opts.eyeLevel !== undefined ? !!opts.eyeLevel : false,
       eyeLevelCm: A.canvas ? A.canvas.getEyeLevelCm() : 105,
-      labels: opts.labels !== undefined ? !!opts.labels : true,
+      labels: hasLabels,
       rulers: hasRulers,
       selection: [],
       hud: false,
@@ -3568,8 +4018,10 @@ html, body {
       theme: 'export',
       uiScale,
       dpr: 1,
-      background: opts.background || '#ffffff',
-      photo: opts.photo !== undefined ? !!opts.photo : true,
+      background: bg,
+      photo: hasPhoto,
+      wall: opts.wall !== undefined ? !!opts.wall : true,
+      floor: opts.floor !== undefined ? !!opts.floor : true,
     });
 
     return canvas;
@@ -3582,39 +4034,36 @@ html, body {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') || 'elevation';
-    const filename = `${name}-cad-${canvas.width}x${canvas.height}.png`;
+    const tag = (opts.measurements === false || opts.annotations === false) ? 'clean' : 'cad';
+    const bgTag = (opts.bgType === 'transparent' || opts.background === null) ? '-transparent' : '';
+    const filename = `${name}-${tag}${bgTag}-${canvas.width}x${canvas.height}.png`;
 
     canvas.toBlob((blob) => {
-      if (blob) U.downloadBlob(blob, filename);
+      if (blob) {
+        U.downloadBlob(blob, filename);
+        if (A.ui) A.ui.toast(`Downloaded ${filename}`, 'success');
+      }
     }, 'image/png');
   }
 
   function downloadReferencePNG(opts = {}) {
     // Clean elevation export for AI image-to-image / Gemini / ControlNet: no CAD lines, no rulers
-    const canvas = renderCanvas({
+    downloadPNG({
       widthPx: opts.widthPx || 2400,
+      measurements: false,
       annotations: false,
       labels: false,
       rulers: false,
       grid: false,
       background: opts.background || '#ffffff',
     });
-    const state = A.store.getState();
-    const name = (state.name || 'elevation')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') || 'elevation';
-    const filename = `${name}-clean-reference-${canvas.width}x${canvas.height}.png`;
-
-    canvas.toBlob((blob) => {
-      if (blob) U.downloadBlob(blob, filename);
-    }, 'image/png');
   }
 
   function referenceDataUrl(opts = {}) {
     // Generate clean reference image for AI image-to-image / ControlNet: no annotations, no rulers
     const canvas = renderCanvas({
       widthPx: opts.widthPx || 1536,
+      measurements: false,
       annotations: false,
       labels: false,
       rulers: false,
@@ -3622,6 +4071,303 @@ html, body {
       background: opts.background || '#ffffff',
     });
     return canvas.toDataURL('image/png');
+  }
+
+  async function copyToClipboard(opts = {}) {
+    try {
+      const canvas = renderCanvas(opts);
+      canvas.toBlob(async (blob) => {
+        if (!blob) throw new Error('Blob creation failed');
+        if (navigator.clipboard && navigator.clipboard.write) {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          if (A.ui) A.ui.toast('📋 Elevation copied to clipboard!', 'success');
+        } else {
+          if (A.ui) A.ui.toast('Clipboard API not supported in this browser.', 'error');
+        }
+      }, 'image/png');
+    } catch (err) {
+      console.error('[Arch2D] copy failed', err);
+      if (A.ui) A.ui.toast('Could not copy image to clipboard.', 'error');
+    }
+  }
+
+  /** Interactive Export Dialog with live preview, background choices, and measurement toggles. */
+  function openModal() {
+    const state = A.store.getState();
+    const hasPhoto = !!(state.wallPhoto && A.photo && A.photo.has(state.wallPhoto.id));
+
+    let opts = {
+      measurements: true,
+      annotations: true,
+      rulers: true,
+      labels: true,
+      bgType: 'white',
+      wall: true,
+      photo: hasPhoto,
+      floor: true,
+      grid: false,
+      eyeLevel: false,
+      widthPx: 2400,
+    };
+
+    // Live preview elements
+    const prevCanvas = U.h('canvas', { class: 'export-preview-canvas' });
+    const checker = U.h('div', { class: 'export-checkerboard' }, prevCanvas);
+    const dimPill = U.h('div', { class: 'export-dim-pill' }, 'Loading preview…');
+    const previewPane = U.h('div', { class: 'export-preview-pane' }, checker, dimPill);
+
+    // Form inputs
+    const chkMeas = U.h('input', { type: 'checkbox', checked: opts.measurements });
+    const chkAnnot = U.h('input', { type: 'checkbox', checked: opts.annotations });
+    const chkRulers = U.h('input', { type: 'checkbox', checked: opts.rulers });
+    const chkLabels = U.h('input', { type: 'checkbox', checked: opts.labels });
+
+    const radWhite = U.h('input', { type: 'radio', name: 'export-bg', value: 'white', checked: true });
+    const radTrans = U.h('input', { type: 'radio', name: 'export-bg', value: 'transparent' });
+    const radDark = U.h('input', { type: 'radio', name: 'export-bg', value: 'dark' });
+
+    const chkWall = U.h('input', { type: 'checkbox', checked: opts.wall });
+    const chkPhoto = hasPhoto ? U.h('input', { type: 'checkbox', checked: opts.photo }) : null;
+    const chkFloor = U.h('input', { type: 'checkbox', checked: opts.floor });
+    const chkGrid = U.h('input', { type: 'checkbox', checked: opts.grid });
+    const chkEye = U.h('input', { type: 'checkbox', checked: opts.eyeLevel });
+
+    const selRes = U.h(
+      'select',
+      { class: 'select', style: { width: '100%' } },
+      U.h('option', { value: '1600' }, '1600 px (Fast / Web)'),
+      U.h('option', { value: '2400', selected: true }, '2400 px (Standard Print / Recommended)'),
+      U.h('option', { value: '3840' }, '3840 px (4K Ultra-Res)')
+    );
+
+    function syncInputs() {
+      chkMeas.checked = opts.measurements;
+      chkAnnot.checked = opts.annotations;
+      chkRulers.checked = opts.rulers;
+      chkLabels.checked = opts.labels;
+
+      radWhite.checked = opts.bgType === 'white';
+      radTrans.checked = opts.bgType === 'transparent';
+      radDark.checked = opts.bgType === 'dark';
+
+      chkWall.checked = opts.wall;
+      if (chkPhoto) chkPhoto.checked = opts.photo;
+      chkFloor.checked = opts.floor;
+      chkGrid.checked = opts.grid;
+      chkEye.checked = opts.eyeLevel;
+
+      selRes.value = String(opts.widthPx);
+      renderPreview();
+    }
+
+    function renderPreview() {
+      const previewOptions = Object.assign({}, opts, { widthPx: 800 });
+      const c = renderCanvas(previewOptions);
+      prevCanvas.width = c.width;
+      prevCanvas.height = c.height;
+      const ctx = prevCanvas.getContext('2d');
+      ctx.drawImage(c, 0, 0);
+
+      const fullW = opts.widthPx;
+      const aspect = c.width / c.height;
+      const fullH = Math.round(fullW / aspect);
+      const photoLabel = (opts.photo && hasPhoto) ? 'w/ Background Photo' : 'w/o Background Photo';
+      const measLabel = opts.measurements ? 'w/ Measurements' : 'w/o Measurements';
+      const bgLabel = opts.bgType === 'transparent' ? 'Transparent' : (opts.bgType === 'white' ? 'White' : 'Dark');
+      dimPill.textContent = `${fullW} × ${fullH} px • ${photoLabel} • ${measLabel} • ${bgLabel}`;
+    }
+
+    function applyPreset(name) {
+      if (name === 'blueprint') {
+        opts.measurements = true;
+        opts.annotations = true;
+        opts.rulers = true;
+        opts.labels = true;
+        opts.bgType = 'white';
+        opts.wall = true;
+        opts.photo = false;
+        opts.floor = true;
+        opts.grid = false;
+      } else if (name === 'clean') {
+        opts.measurements = false;
+        opts.annotations = false;
+        opts.rulers = false;
+        opts.labels = false;
+        opts.bgType = 'white';
+        opts.wall = true;
+        opts.photo = false;
+        opts.floor = true;
+        opts.grid = false;
+      } else if (name === 'room') {
+        opts.measurements = false;
+        opts.annotations = false;
+        opts.rulers = false;
+        opts.labels = false;
+        opts.bgType = 'white';
+        opts.wall = true;
+        opts.photo = true;
+        opts.floor = true;
+        opts.grid = false;
+      } else if (name === 'cutout') {
+        opts.measurements = false;
+        opts.annotations = false;
+        opts.rulers = false;
+        opts.labels = false;
+        opts.bgType = 'transparent';
+        opts.wall = false;
+        opts.photo = false;
+        opts.floor = false;
+        opts.grid = false;
+      }
+      syncInputs();
+    }
+
+    // Input event listeners
+    chkMeas.onchange = () => {
+      opts.measurements = chkMeas.checked;
+      opts.annotations = opts.measurements;
+      opts.rulers = opts.measurements;
+      opts.labels = opts.measurements;
+      syncInputs();
+    };
+    chkAnnot.onchange = () => { opts.annotations = chkAnnot.checked; renderPreview(); };
+    chkRulers.onchange = () => { opts.rulers = chkRulers.checked; renderPreview(); };
+    chkLabels.onchange = () => { opts.labels = chkLabels.checked; renderPreview(); };
+
+    radWhite.onchange = () => { if (radWhite.checked) { opts.bgType = 'white'; renderPreview(); } };
+    radTrans.onchange = () => { if (radTrans.checked) { opts.bgType = 'transparent'; renderPreview(); } };
+    radDark.onchange = () => { if (radDark.checked) { opts.bgType = 'dark'; renderPreview(); } };
+
+    chkWall.onchange = () => { opts.wall = chkWall.checked; renderPreview(); };
+    if (chkPhoto) chkPhoto.onchange = () => { opts.photo = chkPhoto.checked; renderPreview(); };
+    chkFloor.onchange = () => { opts.floor = chkFloor.checked; renderPreview(); };
+    chkGrid.onchange = () => { opts.grid = chkGrid.checked; renderPreview(); };
+    chkEye.onchange = () => { opts.eyeLevel = chkEye.checked; renderPreview(); };
+    selRes.onchange = () => { opts.widthPx = parseInt(selRes.value) || 2400; renderPreview(); };
+
+    // Preset buttons
+    const btnPreClean = U.h('button', { class: 'btn sm ghost', onclick: () => applyPreset('clean') }, '🖼️ Clean (No Dims)');
+    const btnPreCad = U.h('button', { class: 'btn sm ghost', onclick: () => applyPreset('blueprint') }, '📐 CAD (With Dims)');
+    const presetsGrid = U.h('div', { class: 'export-presets-grid' }, btnPreClean, btnPreCad);
+    if (hasPhoto) {
+      const btnPreRoom = U.h('button', { class: 'btn sm ghost', onclick: () => applyPreset('room') }, '📸 Room Photo');
+      presetsGrid.appendChild(btnPreRoom);
+    }
+    const btnPreCutout = U.h('button', { class: 'btn sm ghost', onclick: () => applyPreset('cutout') }, '✨ Transparent');
+    presetsGrid.appendChild(btnPreCutout);
+
+    // Option groups
+    const grpMeas = U.h(
+      'div',
+      { class: 'export-opt-group' },
+      U.h('div', { class: 'export-opt-title' }, 'Measurements'),
+      U.h('label', { class: 'export-check-label', style: { fontWeight: '600' } }, chkMeas, 'Include Measurements'),
+      U.h('div', { style: { display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '22px' } },
+        U.h('label', { class: 'export-check-label' }, chkAnnot, 'Dimension Callouts'),
+        U.h('label', { class: 'export-check-label' }, chkRulers, 'Axis Rulers (Top & Left)'),
+        U.h('label', { class: 'export-check-label' }, chkLabels, 'Element Labels')
+      )
+    );
+
+    const bgOptions = [
+      U.h('label', { class: 'export-check-label' }, radWhite, '⚪ White'),
+      U.h('label', { class: 'export-check-label' }, radTrans, '🏁 Transparent'),
+      U.h('label', { class: 'export-check-label' }, radDark, '⬛ Dark'),
+    ];
+    const grpBg = U.h(
+      'div',
+      { class: 'export-opt-group' },
+      U.h('div', { class: 'export-opt-title' }, 'Background Photo & Layers'),
+      chkPhoto
+        ? U.h('label', { class: 'export-check-label', style: { fontWeight: '600' } }, chkPhoto, '📷 Include Background Photo')
+        : U.h('div', { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)' } }, 'No background photo loaded'),
+      U.h('div', { style: { display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '4px' } }, ...bgOptions),
+      U.h('label', { class: 'export-check-label' }, chkWall, 'Include Wall Surface Texture'),
+      U.h('label', { class: 'export-check-label' }, chkFloor, 'Include Floor Baseline (FFL ±0)')
+    );
+
+    const grpGuides = U.h(
+      'div',
+      { class: 'export-opt-group' },
+      U.h('div', { class: 'export-opt-title' }, 'Guides & Resolution'),
+      U.h('div', { style: { display: 'flex', gap: '12px', flexWrap: 'wrap' } },
+        U.h('label', { class: 'export-check-label' }, chkGrid, 'Grid Lines'),
+        U.h('label', { class: 'export-check-label' }, chkEye, 'TV Eye Level Datum')
+      ),
+      U.h('div', { style: { marginTop: '4px' } }, selRes)
+    );
+
+    const btnDownload = U.h(
+      'button',
+      {
+        class: 'btn primary',
+        style: { width: '100%', justifyContent: 'center' },
+        onclick: () => {
+          downloadPNG(opts);
+          close();
+        },
+      },
+      '⬇️ Download PNG'
+    );
+
+    const btnCopy = U.h(
+      'button',
+      {
+        class: 'btn secondary',
+        style: { width: '100%', justifyContent: 'center' },
+        onclick: () => copyToClipboard(opts),
+      },
+      '📋 Copy to Clipboard'
+    );
+
+    const btnCancel = U.h(
+      'button',
+      { class: 'btn ghost sm', style: { width: '100%', justifyContent: 'center' }, onclick: () => close() },
+      'Close'
+    );
+
+    const btnBar = U.h('div', { class: 'export-btn-bar' }, btnDownload, btnCopy, btnCancel);
+
+    const side = U.h(
+      'div',
+      { class: 'export-side' },
+      U.h('div', { class: 'section-heading' }, 'Export Presets'),
+      presetsGrid,
+      grpMeas,
+      grpBg,
+      grpGuides,
+      btnBar
+    );
+
+    const modal = U.h(
+      'div',
+      { class: 'studio-modal export-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Export Elevation Drawing' },
+      U.h(
+        'div',
+        { class: 'studio-header' },
+        U.h('div', { class: 'studio-title' }, U.h('span', null, '📐'), U.h('span', null, 'Export Elevation Drawing')),
+        U.h('button', { class: 'icon-btn', title: 'Close (Esc)', onclick: () => close() }, '✕')
+      ),
+      U.h('div', { class: 'export-body' }, previewPane, side)
+    );
+
+    const backdrop = U.h('div', { class: 'modal-backdrop open', id: 'export-backdrop' }, modal);
+    document.body.appendChild(backdrop);
+
+    function onKey(e) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+      }
+    }
+    document.addEventListener('keydown', onKey);
+
+    function close() {
+      document.removeEventListener('keydown', onKey);
+      backdrop.remove();
+    }
+
+    renderPreview();
   }
 
   /** Generates side-by-side comparison sheet of CAD elevation vs AI render. */
@@ -3703,6 +4449,8 @@ html, body {
     downloadPNG,
     downloadReferencePNG,
     referenceDataUrl,
+    copyToClipboard,
+    openModal,
     comparisonSheet,
   };
 })();
@@ -3751,12 +4499,21 @@ html, body {
   function getTransform() {
     const s = getPxPerCm();
     const state = A.store.getState();
-    const wallW = state.wallWidth * s;
-    const wallH = state.wallHeight * s;
+    let minCmX = 0, maxCmX = state.wallWidth;
+    let minCmY = 0, maxCmY = state.wallHeight;
 
-    // Centered with margins
-    const ox = Math.round((width - wallW) / 2 + panX);
-    const oy = Math.round((height + wallH) / 2 + panY);
+    if (state.wallPhoto && state.wallPhoto.visible && A.photo) {
+      const b = (state.wallPhoto && state.wallPhoto.bounds) || A.photo.bounds(state.wallPhoto.id);
+      if (b && b.wCm && b.hCm) {
+        minCmX = Math.min(0, b.xCm);
+        maxCmX = Math.max(state.wallWidth, b.xCm + b.wCm);
+        minCmY = Math.min(0, b.yCm);
+        maxCmY = Math.max(state.wallHeight, b.yCm + b.hCm);
+      }
+    }
+
+    const ox = Math.round(width / 2 - ((minCmX + maxCmX) * s) / 2 + panX);
+    const oy = Math.round(height / 2 + ((minCmY + maxCmY) * s) / 2 + panY);
     return A.render.makeTransform(s, ox, oy);
   }
 
@@ -3784,7 +4541,28 @@ html, body {
     const availW = Math.max(100, width - padX * 2);
     const availH = Math.max(100, height - padY * 2);
 
-    baseScale = Math.min(availW / state.wallWidth, availH / state.wallHeight);
+    let contentW = state.wallWidth;
+    let contentH = state.wallHeight;
+
+    if (state.wallPhoto && state.wallPhoto.visible && A.photo) {
+      const b = (state.wallPhoto && state.wallPhoto.bounds) || A.photo.bounds(state.wallPhoto.id);
+      if (b && b.wCm && b.hCm) {
+        const minCmX = Math.min(0, b.xCm);
+        const maxCmX = Math.max(state.wallWidth, b.xCm + b.wCm);
+        const minCmY = Math.min(0, b.yCm);
+        const maxCmY = Math.max(state.wallHeight, b.yCm + b.hCm);
+        contentW = maxCmX - minCmX;
+        contentH = maxCmY - minCmY;
+      } else {
+        const ar = A.photo.aspect(state.wallPhoto.id);
+        if (ar > 0) {
+          const photoW = state.wallHeight * ar;
+          contentW = Math.max(contentW, photoW);
+        }
+      }
+    }
+
+    baseScale = Math.min(availW / contentW, availH / contentH);
   }
 
   function fit() {
@@ -3969,24 +4747,34 @@ html, body {
   /* ---------- Pointer Event Handlers ---------- */
   function onPointerDown(e) {
     if (U.isTypingTarget(document.activeElement)) document.activeElement.blur();
-    canvas.setPointerCapture(e.pointerId);
-    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    // Multi-touch pinch-zoom setup
-    if (activePointers.size === 2) {
-      const pts = Array.from(activePointers.values());
-      initialPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-      initialPinchZoom = zoom;
-      dragMode = 'pinch';
-      return;
+    // Only respond to left button (0) or middle button (1)
+    if (e.button !== 0 && e.button !== 1) return;
+
+    try {
+      if (canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);
+    } catch (_) {}
+
+    // Multi-touch pinch-zoom setup (touch only, never mouse)
+    if (e.pointerType === 'touch') {
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (activePointers.size === 2) {
+        const pts = Array.from(activePointers.values());
+        initialPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        initialPinchZoom = zoom;
+        dragMode = 'pinch';
+        return;
+      }
+    } else {
+      activePointers.clear();
     }
 
     const pt = getCanvasPoint(e);
     const hit = hitTest(pt.x, pt.y);
     const sel = A.store.getSelection();
 
-    // Spacebar or middle click => pan
-    if (e.button === 1 || e.spaceKey || (e.altKey && e.button === 0)) {
+    // Middle click or Alt+click => pan
+    if (e.button === 1 || (e.altKey && e.button === 0)) {
       dragMode = 'pan';
       dragStart = { x: pt.x, y: pt.y, panX, panY };
       canvas.style.cursor = 'grabbing';
@@ -4016,9 +4804,15 @@ html, body {
         A.store.select(hit.element.id);
       }
 
+      const currentSelected = A.store.getSelectedElements();
+      if (!currentSelected.length) {
+        dragMode = null;
+        dragStart = null;
+        return;
+      }
+
       dragMode = 'move';
       A.store.begin();
-      const currentSelected = A.store.getSelectedElements();
       dragStart = {
         startX: pt.cmX,
         startY: pt.cmY,
@@ -4074,18 +4868,27 @@ html, body {
     }
 
     if (dragMode === 'pan') {
+      if (!dragStart) return;
       panX = dragStart.panX + (pt.x - dragStart.x);
       panY = dragStart.panY + (pt.y - dragStart.y);
       requestRedraw();
       emitView();
     } else if (dragMode === 'move') {
+      if (!dragStart || !dragStart.elements || !dragStart.elements.length) {
+        dragMode = null;
+        return;
+      }
+      const primary = dragStart.elements[0];
+      if (!primary) {
+        dragMode = null;
+        return;
+      }
+
       const rawDeltaX = pt.cmX - dragStart.startX;
       const rawDeltaY = pt.cmY - dragStart.startY;
       const state = A.store.getState();
       const excludeIds = new Set(dragStart.elements.map((e) => e.id));
 
-      // Calculate snap based on primary element (first selected)
-      const primary = dragStart.elements[0];
       const proposedX = primary.x + rawDeltaX;
       const proposedY = primary.y + rawDeltaY;
       const snapResult = calculateSnaps(primary, proposedX, proposedY, state, excludeIds);
@@ -4108,6 +4911,10 @@ html, body {
       );
       requestRedraw();
     } else if (dragMode === 'resize') {
+      if (!dragStart || !dragStart.element) {
+        dragMode = null;
+        return;
+      }
       const hnd = dragStart.handle;
       const el = dragStart.element;
       const rawDx = pt.cmX - dragStart.startX;
@@ -4156,6 +4963,7 @@ html, body {
       );
       requestRedraw();
     } else if (dragMode === 'marquee') {
+      if (!dragStart) return;
       const x1 = Math.min(dragStart.startX, pt.x);
       const y1 = Math.min(dragStart.startY, pt.y);
       const x2 = Math.max(dragStart.startX, pt.x);
@@ -4178,11 +4986,17 @@ html, body {
   }
 
   function onPointerUp(e) {
-    if (activePointers.has(e.pointerId)) {
-      activePointers.delete(e.pointerId);
-    }
-    if (canvas.hasPointerCapture(e.pointerId)) {
-      canvas.releasePointerCapture(e.pointerId);
+    if (e && e.pointerId !== undefined) {
+      if (activePointers.has(e.pointerId)) {
+        activePointers.delete(e.pointerId);
+      }
+      try {
+        if (canvas && canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)) {
+          canvas.releasePointerCapture(e.pointerId);
+        }
+      } catch (_) {}
+    } else {
+      activePointers.clear();
     }
 
     if (dragMode === 'move' || dragMode === 'resize') {
@@ -4194,7 +5008,7 @@ html, body {
     activeGuides = [];
     currentMarquee = null;
     initialPinchDist = null;
-    canvas.style.cursor = 'default';
+    if (canvas) canvas.style.cursor = 'default';
     requestRedraw();
   }
 
@@ -4299,10 +5113,30 @@ html, body {
     canvas.addEventListener('pointercancel', onPointerUp);
     canvas.addEventListener('wheel', onWheel, { passive: false });
 
+    // Safety: global pointerup & blur to prevent stuck drags when pointer leaves canvas or window
+    window.addEventListener('pointerup', (e) => {
+      if (dragMode) onPointerUp(e);
+    });
+    window.addEventListener('pointercancel', (e) => {
+      if (dragMode) onPointerUp(e);
+    });
+    window.addEventListener('blur', () => {
+      activePointers.clear();
+      if (dragMode) onPointerUp();
+    });
+
     // Double click to reset / fit zoom
     canvas.addEventListener('dblclick', () => fit());
 
     window.addEventListener('resize', U.debounce(resize, 80));
+
+    // ResizeObserver on canvas host container so layout changes (sidebars open/close) resize immediately
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => {
+        resize();
+      });
+      ro.observe(hostEl);
+    }
 
     // Listen to store updates
     A.bus.on('state:changed', () => requestRedraw());
@@ -4977,7 +5811,7 @@ html, body {
 
     const extraMods = modifiers.length ? `\n• Stylistic Enhancements: ${modifiers.join(', ')}.` : '';
 
-    const hasPhoto = !!(state.wallPhoto && state.wallPhoto.visible);
+    const hasPhoto = opts.photo !== undefined ? !!opts.photo : !!(state.wallPhoto && state.wallPhoto.visible);
     const settingPara = hasPhoto
       ? `2. Real Room Architectural Setting: The design in the attached reference image is mapped directly onto an actual photograph of the client's living room. Preserve the real architectural room context, surrounding walls, existing floor finish, ambient room lighting, ceiling geometry, and environment visible in the reference photo, seamlessly installing the bespoke media wall cabinetry onto this physical wall.`
       : `2. Architectural Setting & Atmosphere: Set inside a luxury contemporary residence (${m.phrase} aesthetic). The main wall is finished in ${m.wallMaterial}. In the foreground, the floor is ${m.flooring || 'wide-plank European white oak hardwood with a subtle matte satin finish'}. The ceiling features a flush architectural shadowline reveal. ${m.atmosphere || 'Soft, diffused natural daylight enters through off-camera floor-to-ceiling sheer linen curtains, casting gentle directional window shadows across the wall.'}`;
@@ -5606,14 +6440,29 @@ html, body {
     const promptData = A.prompt.build(A.store.getState(), { format: selectedFormat, modifiers: Array.from(activeModifiers) });
     const textarea = U.h('textarea', { class: 'prompt-textarea', id: 'studio-prompt-input' }, promptData.prompt);
 
+    // Reference Image Export State for AI
+    const st = A.store.getState();
+    const hasPhotoLoaded = !!(st.wallPhoto && A.photo && A.photo.has(st.wallPhoto.id));
+    let studioIncludePhoto = hasPhotoLoaded && st.wallPhoto.visible;
+    let studioIncludeMeas = false; // clean reference by default for AI
+
+    function updateStudioPrompt() {
+      const pData = A.prompt.build(A.store.getState(), {
+        format: selectedFormat,
+        modifiers: Array.from(activeModifiers),
+        photo: studioIncludePhoto,
+      });
+      textarea.value = pData.prompt;
+    }
+
     // Quick Action Bar
     const promptActions = U.h(
       'div',
-      { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' } },
-      U.h('span', { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)' } }, `Aspect: ${promptData.aspectRatio} · Wall: ${A.store.getState().wallWidth}×${A.store.getState().wallHeight}cm`),
+      { style: { display: 'flex', flexDirection: 'column', gap: '8px' } },
       U.h(
         'div',
-        { class: 'studio-action-row' },
+        { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' } },
+        U.h('span', { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)' } }, `Aspect: ${promptData.aspectRatio} · Wall: ${st.wallWidth}×${st.wallHeight}cm`),
         U.h(
           'button',
           {
@@ -5625,32 +6474,131 @@ html, body {
             },
           },
           selectedFormat === 'vision' ? '📋 Copy Vision Prompt' : '📋 Copy Prompt'
+        )
+      ),
+      U.h(
+        'div',
+        {
+          style: {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '8px',
+            background: 'var(--bg-2)',
+            padding: '8px 12px',
+            borderRadius: 'var(--r-md)',
+            border: '1px solid var(--line)',
+          },
+        },
+        U.h(
+          'div',
+          { style: { display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' } },
+          U.h('span', { style: { fontSize: 'var(--fs-xs)', fontWeight: '600', color: 'var(--text-1)' } }, 'Reference Image:'),
+          hasPhotoLoaded
+            ? U.h(
+                'label',
+                { class: 'export-check-label', style: { fontSize: 'var(--fs-xs)', color: 'var(--text-0)', cursor: 'pointer' } },
+                U.h('input', {
+                  type: 'checkbox',
+                  checked: studioIncludePhoto,
+                  id: 'chk-studio-photo',
+                  onchange: (e) => {
+                    studioIncludePhoto = e.target.checked;
+                    updateStudioPrompt();
+                    A.ui.toast(studioIncludePhoto ? '📷 Background photo included in AI reference' : '📷 Background photo excluded from AI reference', 'info');
+                  },
+                }),
+                '📷 Background Photo'
+              )
+            : U.h(
+                'span',
+                { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)', display: 'inline-flex', alignItems: 'center', gap: '4px' } },
+                '📷 Background Photo:',
+                U.h('span', { style: { color: 'var(--text-3)' } }, 'none loaded ·'),
+                U.h(
+                  'a',
+                  {
+                    href: '#',
+                    style: { color: 'var(--brass-strong)', textDecoration: 'underline', cursor: 'pointer' },
+                    onclick: async (e) => {
+                      e.preventDefault();
+                      if (A.photo && A.photo.pickFile) {
+                        const file = await A.photo.pickFile();
+                        if (file) {
+                          await A.photo.upload(file);
+                          renderBody();
+                        }
+                      }
+                    },
+                  },
+                  'Upload'
+                )
+              ),
+          U.h(
+            'label',
+            { class: 'export-check-label', style: { fontSize: 'var(--fs-xs)', color: 'var(--text-0)', cursor: 'pointer' } },
+            U.h('input', {
+              type: 'checkbox',
+              checked: studioIncludeMeas,
+              id: 'chk-studio-meas',
+              onchange: (e) => {
+                studioIncludeMeas = e.target.checked;
+                A.ui.toast(studioIncludeMeas ? '📐 Measurements included in reference' : '📐 Clean reference (measurements excluded)', 'info');
+              },
+            }),
+            '📐 Measurements'
+          )
         ),
         U.h(
-          'button',
-          {
-            class: 'btn ghost sm',
-            id: 'btn-download-clean-ref',
-            title: 'Download clean elevation image without CAD rulers or dimensions (ideal for Gemini / Midjourney)',
-            onclick: () => {
-              A.exporter.downloadReferencePNG();
-              A.ui.toast('Clean reference PNG downloaded!', 'info');
+          'div',
+          { style: { display: 'flex', gap: '6px', alignItems: 'center' } },
+          U.h(
+            'button',
+            {
+              class: 'btn ghost sm',
+              id: 'btn-copy-ref-image',
+              title: 'Copy reference image to clipboard to paste directly into Gemini (Cmd+V)',
+              onclick: () => {
+                A.exporter.copyToClipboard({
+                  widthPx: 2400,
+                  measurements: studioIncludeMeas,
+                  photo: studioIncludePhoto,
+                  background: '#ffffff',
+                });
+              },
             },
-          },
-          '🖼️ Clean Ref PNG'
-        ),
-        U.h(
-          'button',
-          {
-            class: 'btn ghost sm',
-            id: 'btn-download-cad-plan',
-            title: 'Download architectural elevation with dimension callouts and rulers',
-            onclick: () => {
-              A.exporter.downloadPNG({ widthPx: 2400 });
-              A.ui.toast('CAD elevation plan downloaded!', 'info');
+            '📋 Copy Image'
+          ),
+          U.h(
+            'button',
+            {
+              class: 'btn ghost sm',
+              id: 'btn-download-clean-ref',
+              title: 'Download reference image for Gemini or Midjourney',
+              onclick: () => {
+                A.exporter.downloadPNG({
+                  widthPx: 2400,
+                  measurements: studioIncludeMeas,
+                  photo: studioIncludePhoto,
+                  background: '#ffffff',
+                });
+              },
             },
-          },
-          '📐 CAD Plan'
+            '⬇️ Download PNG'
+          ),
+          U.h(
+            'button',
+            {
+              class: 'btn ghost sm',
+              id: 'btn-more-export-opts',
+              title: 'Open full Export Elevation dialog with live preview and custom options',
+              onclick: () => {
+                A.exporter.openModal();
+              },
+            },
+            '⚙️ More...'
+          )
         )
       )
     );
@@ -6051,9 +6999,11 @@ html, body {
 
     // Listen to changes to re-render inspector or update buttons
     A.bus.on('state:changed', (e) => {
-      renderInspector();
-      updateHeaderState();
       const r = e && e.reason;
+      if (r !== 'drag') {
+        renderInspector();
+      }
+      updateHeaderState();
       if (r === 'photo' || r === 'wall' || r === 'mood' || r === 'reset' || r === 'undo' || r === 'redo') {
         renderLeftSidebar();
       }
@@ -6149,7 +7099,7 @@ html, body {
       });
     }
 
-    if (btnExport) btnExport.addEventListener('click', () => A.exporter.downloadPNG({ widthPx: 2400 }));
+    if (btnExport) btnExport.addEventListener('click', () => A.exporter.openModal());
     if (btnStudio) btnStudio.addEventListener('click', () => A.studio.open());
 
     updateHeaderState();
@@ -6322,14 +7272,14 @@ html, body {
           class: 'btn',
           id: 'btn-upload-wall-photo',
           style: { width: '100%', justifyContent: 'center' },
-          onclick: () => A.photoCalibrate.upload(),
+          onclick: () => A.photo.upload(),
         },
         '📷 Upload Wall Photo'
       );
       secPhoto.appendChild(btnUpload);
       secPhoto.appendChild(
         U.h('div', { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)', marginTop: '4px', lineHeight: '1.4' } },
-          'Use a real photo of your wall as a drafting backdrop. You will align the 4 corners to scale the wall precisely.'
+          'Upload a photo of your room to use as a backdrop. Displayed uncropped in the workspace.'
         )
       );
     } else {
@@ -6338,6 +7288,27 @@ html, body {
       const thumb = U.h('img', { class: 'photo-thumb', src: photoData, alt: 'Wall photo background' });
       thumbWrap.appendChild(thumb);
       card.appendChild(thumbWrap);
+
+      // Check if photo aspect differs from wall envelope
+      const ar = A.photo ? A.photo.aspect(photoRef.id) : 1;
+      const idealW = Math.round(state.wallHeight * ar);
+      if (Math.abs(state.wallWidth - idealW) > 5) {
+        const btnMatch = U.h(
+          'button',
+          {
+            class: 'btn sm secondary',
+            style: { width: '100%', justifyContent: 'center', marginBottom: '8px' },
+            title: `Snap wall width to ${idealW} cm so the drafting envelope matches the photo aspect ratio`,
+            onclick: () => {
+              A.store.setWall({ wallWidth: idealW });
+              A.canvas.fit();
+              A.ui.toast(`Wall width updated to ${idealW} cm to match photo`, 'success');
+            },
+          },
+          `📐 Match Wall Width (${idealW} cm)`
+        );
+        card.appendChild(btnMatch);
+      }
 
       // Visibility toggle & Recalibrate row
       const rowActs = U.h('div', { class: 'form-row' });
@@ -6355,7 +7326,7 @@ html, body {
         {
           class: 'btn sm ghost',
           style: { flex: 1, justifyContent: 'center' },
-          title: 'Adjust 4 corner calibration points',
+          title: 'Straighten perspective using 4 corner handles',
           onclick: () => A.photoCalibrate.adjust(),
         },
         '📐 Calibrate'
@@ -6371,7 +7342,7 @@ html, body {
         {
           class: 'btn sm ghost',
           style: { flex: 1, justifyContent: 'center' },
-          onclick: () => A.photoCalibrate.upload(),
+          onclick: () => A.photo.upload(),
         },
         '📷 Replace'
       );
