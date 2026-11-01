@@ -629,7 +629,7 @@
     ctx.fillText(badgeText, bx, by + 1 * k);
 
     // 4. TV Center Alignment Markers & Delta Brackets
-    const tvs = state.elements.filter((e) => e.type === 'tv' || e.label.toLowerCase().includes('tv'));
+    const tvs = state.elements.filter((e) => e.type.startsWith('tv') || e.type === 'screen_ust' || e.label.toLowerCase().includes('tv') || e.label.toLowerCase().includes('screen'));
     for (const tv of tvs) {
       const tvCenterCm = tv.y + tv.height / 2;
       const tvCenterY = T.y(tvCenterCm);

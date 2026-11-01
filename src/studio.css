@@ -247,39 +247,60 @@
 }
 
 /* Split slider comparison */
+.split-viewer-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: var(--bg-1);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  padding: var(--sp-3);
+}
+
 .split-viewer {
   position: relative;
   width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   overflow: hidden;
   user-select: none;
+  cursor: ew-resize;
+  border-radius: var(--r-md);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  background: #ffffff;
 }
-.split-img-cad, .split-img-render {
+
+.split-img-cad,
+.split-img-render {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  display: block;
 }
+
 .split-img-cad {
   background: #ffffff;
 }
-.split-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  overflow: hidden;
-}
+
 .split-handle {
   position: absolute;
   top: 0;
   bottom: 0;
   width: 3px;
+  transform: translateX(-50%);
   background: var(--brass-strong);
   cursor: ew-resize;
+  z-index: 10;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
 }
+
 .split-handle::after {
   content: '◂ ▸';
   position: absolute;
@@ -287,11 +308,35 @@
   left: 50%;
   transform: translate(-50%, -50%);
   background: var(--bg-0);
-  border: 1px solid var(--brass);
-  color: var(--brass);
-  font-size: 10px;
-  padding: 3px 6px;
-  border-radius: 10px;
+  border: 1.5px solid var(--brass-strong);
+  color: var(--brass-strong);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.split-badge {
+  position: absolute;
+  top: 12px;
+  padding: 4px 10px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  border-radius: var(--r-sm);
+  background: rgba(11, 13, 17, 0.8);
+  backdrop-filter: blur(4px);
+  color: var(--text-0);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  z-index: 5;
+  user-select: none;
+}
+.split-badge.left {
+  left: 12px;
+}
+.split-badge.right {
+  right: 12px;
 }
 
 /* Security notice banner */

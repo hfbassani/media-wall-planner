@@ -89,9 +89,11 @@
 
     const w = Math.round(el.width);
     const h = Math.round(el.height);
-    const noun = (V.presets[el.type] && V.presets[el.type].noun) || el.label.toLowerCase();
+    const preset = V.presets[el.type];
+    const noun = (preset && preset.noun) || el.label.toLowerCase();
+    const detailDesc = preset && preset.description ? ` (${preset.description})` : '';
 
-    return `${spatialPrefix} a ${w}cm wide by ${h}cm high ${noun} finished in ${materialPhrase}${ledDesc}.`;
+    return `${spatialPrefix} a ${w}cm wide by ${h}cm high ${noun}: finished in ${materialPhrase}${detailDesc}${ledDesc}.`;
   }
 
   function describeElements(state) {
@@ -112,53 +114,84 @@
     const modifiers = opts.modifiers || [];
 
     const hasSlats = state.elements.some((e) => e.texture === 'slats');
-    const hasCredenza = state.elements.some((e) => e.type === 'credenza');
-    const hasTv = state.elements.some((e) => e.type === 'tv' || e.texture === 'glass');
-    const hasSoundbar = state.elements.some((e) => e.type === 'soundbar' || e.texture === 'mesh');
-    const hasFireplace = state.elements.some((e) => e.type === 'fireplace');
-    const hasShelves = state.elements.some((e) => e.type === 'bookshelf' || e.texture === 'niche');
-    const hasUpper = state.elements.some((e) => e.type === 'upper');
+    const hasMarble = state.elements.some((e) => e.texture === 'marble');
+    const hasTravertine = state.elements.some((e) => e.texture === 'travertine');
+    const hasConcrete = state.elements.some((e) => e.texture === 'concrete');
+    const hasFluted = state.elements.some((e) => e.texture === 'fluted');
+    const hasMetal = state.elements.some((e) => e.texture === 'metal');
+    const hasFabric = state.elements.some((e) => e.texture === 'fabric');
+    const hasMirror = state.elements.some((e) => e.texture === 'mirror');
+
+    const hasCredenza = state.elements.some((e) => e.type.includes('credenza') || e.type.includes('bench') || e.type === 'upper' || e.type === 'tower_vert');
+    const hasTv = state.elements.some((e) => e.type.startsWith('tv') || e.type.startsWith('screen') || e.texture === 'glass');
+    const hasSoundbar = state.elements.some((e) => e.type === 'soundbar' || e.type === 'speaker_inwall' || e.type === 'subwoofer' || e.type === 'av_bay');
+    const hasFireplace = state.elements.some((e) => e.type.includes('fireplace') || e.type.includes('hearth'));
+    const hasShelves = state.elements.some((e) => e.type.includes('shelf') || e.type.includes('niche') || e.type.includes('shadow') || e.type === 'bookshelf');
+    const hasProps = state.elements.some((e) => e.type.startsWith('prop_') || e.type.includes('sconce') || e.type.includes('light'));
     const hasLeds = state.elements.some((e) => e.ledHalo || e.ledUnderglow);
     const warmLed = state.elements.some((e) => (e.ledHalo || e.ledUnderglow) && e.ledTemp !== 4000);
 
     const craftBulletPoints = [];
+
+    // Feature wall claddings & backdrops
+    if (hasMarble) {
+      const marbleMat = (m.materials && m.materials.marble) || 'monumental bookmatched honed porcelain marble slab';
+      craftBulletPoints.push(`- Bookmatched Stone Feature: Monumental full-height ${marbleMat} with continuous flowing natural veining and crisp mitered edge returns, illuminated by soft perimeter LED halo lighting.`);
+    }
+
+    if (hasTravertine) {
+      const travMat = (m.materials && m.materials.travertine) || 'honed Roman vein-cut travertine stone panels';
+      craftBulletPoints.push(`- Travertine Cladding: Architectural ${travMat} with horizontal sediment stratification, tactile micropores, and refined shadowline brass reveals.`);
+    }
 
     if (hasSlats) {
       const slatMat = (m.materials && m.materials.slats) || 'three-dimensional fluted white oak timber slats';
       craftBulletPoints.push(`- Feature Wall Backdrop: Three-dimensional ${slatMat} with deep tactile shadow reveals backed by matte black acoustic felt. Authentic wood grain with natural timber color variations and realistic depth.`);
     }
 
+    if (hasFluted) {
+      const flutedMat = (m.materials && m.materials.fluted) || 'precision micro-fluted timber paneling';
+      craftBulletPoints.push(`- Micro-Fluted Tambour Detailing: Tight ${flutedMat} offering tactile geometric rhythm with subtle cylindrical shadow-and-highlight lines.`);
+    }
+
+    if (hasConcrete) {
+      const concreteMat = (m.materials && m.materials.concrete) || 'seamless hand-troweled architectural micro-cement';
+      craftBulletPoints.push(`- Textural Cement Finish: Soft ${concreteMat} with delicate mineral clouding and soft industrial light diffusion.`);
+    }
+
     if (hasCredenza) {
       const woodMat = (m.materials && m.materials.woodgrain) || 'warm natural oak veneer';
-      craftBulletPoints.push(`- Floating Low Credenza: Continuous-grain ${woodMat} wrapping seamlessly across the top surface and drawer faces with 45-degree mitered waterfall edges and recessed shadowline finger pulls. Solidly cantilevered above the floor.`);
+      craftBulletPoints.push(`- Bespoke Joinery & Console: Continuous-grain ${woodMat} wrapping seamlessly across top surfaces and drawer fronts with 45-degree mitered waterfall edges and recessed shadowline finger pulls. Solidly cantilevered above the floor.`);
     }
 
     if (hasTv) {
-      craftBulletPoints.push(`- Television: Flush-mounted ultra-slim OLED display with razor-thin bezels, showing deep pitch-black screen depth and subtle, realistic ambient window reflections on the dark glass panel.`);
+      const isFrameTv = state.elements.some((e) => e.type === 'tv_frame');
+      const isUstScreen = state.elements.some((e) => e.type === 'screen_ust');
+      if (isFrameTv) {
+        craftBulletPoints.push(`- Display (Art Mode): Flush lifestyle art television enclosed in a slender beveled timber gallery frame, displaying an ultra-matte non-glare fine art canvas print.`);
+      } else if (isUstScreen) {
+        craftBulletPoints.push(`- Projection Display: 100-inch fixed-frame ultra-short-throw ambient light rejecting (ALR) optical projection screen with an ultra-thin 10mm matte black bezel.`);
+      } else {
+        craftBulletPoints.push(`- Television: Flush-mounted ultra-slim OLED display with razor-thin bezels, showing deep pitch-black screen depth and subtle, realistic ambient window reflections on the dark glass panel.`);
+      }
     }
 
     if (hasSoundbar) {
-      craftBulletPoints.push(`- Audio: Slim architectural soundbar wrapped in tactile acoustic mesh fabric, mounted flush directly below the television.`);
+      craftBulletPoints.push(`- Architectural Audio: Seamless high-fidelity acoustic elements, including flush magnetic in-wall speaker grilles and a slim soundbar wrapped in tactile woven acoustic fabric.`);
     }
 
     if (hasShelves) {
-      const nicheMat = (m.materials && m.materials.niche) || 'limewashed open display niche';
+      const nicheMat = (m.materials && m.materials.niche) || 'limewashed open display niche with solid shelving';
       craftBulletPoints.push(`- Display Shelving / Niches: Deep architectural ${nicheMat}, minimally styled with curated ceramic vessels, art monographs, and sculptural objects with natural ambient occlusion.`);
     }
 
     if (hasFireplace) {
       const fireMat = (m.materials && m.materials.fireplace) || 'frameless linear electric fireplace';
-      craftBulletPoints.push(`- Fireplace: Flush integrated ${fireMat} with warm glowing ember bed and realistic soft flame ribbons.`);
+      craftBulletPoints.push(`- Fireplace & Hearth: Flush integrated ${fireMat} with warm glowing ember bed and realistic soft flame ribbons, complemented by a cantilevered monolithic stone hearth bench.`);
     }
 
-    if (hasUpper) {
-      const upperMat = (m.materials && m.materials.matte) || 'ultra-matte lacquer';
-      craftBulletPoints.push(`- Upper Cabinetry: Minimalist handleless push-to-open upper cupboards finished in ${upperMat} with precise hairline reveals.`);
-    }
-
-    const customEls = state.elements.filter((e) => !['tv', 'soundbar', 'fireplace', 'credenza', 'slats', 'bookshelf', 'upper'].includes(e.type));
-    if (customEls.length) {
-      craftBulletPoints.push(`- Architectural Millwork: Custom built-in cabinetry modules finished with seamless architectural joinery.`);
+    if (hasProps) {
+      craftBulletPoints.push(`- Architectural Styling & Props: Slender linear vertical brass wall sconces emitting soft grazing light, museum-grade picture lighting, framed contemporary abstract artwork, and mature indoor botanical greenery in handcrafted ceramic planters.`);
     }
 
     let lightingBullet = '';

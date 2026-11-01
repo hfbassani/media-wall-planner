@@ -243,22 +243,77 @@ html, body {
   color: var(--text-2);
 }
 
-/* Presets Library Buttons */
+/* Presets Library Buttons & Tabs */
+.preset-search-box {
+  margin-bottom: 8px;
+}
+.preset-search-input {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--text-0);
+  font-size: var(--fs-xs);
+  outline: none;
+  transition: border-color var(--t-fast);
+}
+.preset-search-input:focus {
+  border-color: var(--brass);
+}
+.preset-category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.preset-cat-tab {
+  padding: 3px 7px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  font-size: 10.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--t-fast);
+  white-space: nowrap;
+}
+.preset-cat-tab:hover {
+  color: var(--text-0);
+  border-color: var(--line-strong);
+}
+.preset-cat-tab.active {
+  background: var(--brass-soft);
+  border-color: var(--brass-strong);
+  color: var(--brass-strong);
+  font-weight: 600;
+}
 .presets-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 6px;
+  gap: 5px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.presets-grid::-webkit-scrollbar {
+  width: 4px;
+}
+.presets-grid::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 4px;
 }
 .preset-item-btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
+  padding: 7px 10px;
   background: var(--bg-2);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   color: var(--text-0);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-xs);
   font-weight: 500;
   cursor: pointer;
   transition: all var(--t-fast);
@@ -268,10 +323,28 @@ html, body {
   background: var(--bg-3);
   border-color: var(--brass);
 }
+.preset-label-wrap {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preset-swatch-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  display: inline-block;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
 .preset-dims {
-  font-size: var(--fs-xs);
+  font-size: 11px;
   color: var(--text-2);
   font-family: var(--font-mono);
+  margin-left: 6px;
+  flex-shrink: 0;
 }
 
 /* Texture Selector Grid */

@@ -31,8 +31,8 @@
       label: 'Google Nano Banana (Gemini)',
       needsKey: true,
       keyOptional: false,
-      defaultModel: 'gemini-3.1-flash-image',
-      models: ['gemini-3.1-flash-image', 'gemini-3.1-flash-lite-image', 'gemini-3-pro-image', 'gemini-2.5-flash-image'],
+      defaultModel: 'gemini-2.5-flash-image',
+      models: ['gemini-2.5-flash-image', 'gemini-3.1-flash-image', 'gemini-3.1-flash-lite-image', 'gemini-3-pro-image'],
       keyUrl: 'https://aistudio.google.com/apikey',
       notes: 'Browser-safe Gemini REST API. High text adherence and architectural accuracy.',
     },
@@ -137,17 +137,41 @@
       throw new ProviderError('auth', 'Google AI Studio API key required.', 'Get a free API key at aistudio.google.com and enter it in settings.');
     }
 
-    const model = cfg.model || 'gemini-3.1-flash-image';
+    const model = cfg.model || 'gemini-2.5-flash-image';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
     // Map nearest ratio to Gemini's accepted aspect ratios (16:9, 4:3, 1:1, 3:4, 9:16)
     const validRatios = ['16:9', '4:3', '1:1', '3:4', '9:16', '21:9', '3:2'];
     const ar = validRatios.includes(opts.nearestRatio) ? opts.nearestRatio : '16:9';
 
+    const parts = [];
+    if (opts.image) {
+      let mimeType = 'image/jpeg';
+      let data = opts.image;
+      if (opts.image.startsWith('data:')) {
+        const commaIdx = opts.image.indexOf(',');
+        if (commaIdx !== -1) {
+          const prefix = opts.image.substring(0, commaIdx);
+          const mimeMatch = prefix.match(/^data:([^;]+)/);
+          if (mimeMatch) mimeType = mimeMatch[1];
+          data = opts.image.substring(commaIdx + 1);
+        }
+      }
+      data = data.replace(/\s+/g, '');
+      parts.push({
+        inlineData: {
+          mimeType,
+          data,
+        },
+      });
+    }
+
+    parts.push({ text: opts.prompt });
+
     const payload = {
       contents: [
         {
-          parts: [{ text: opts.prompt }],
+          parts,
         },
       ],
       generationConfig: {

@@ -131,17 +131,22 @@
   }
 
   function referenceDataUrl(opts = {}) {
-    // Generate clean reference image for AI image-to-image / ControlNet: no annotations, no rulers
+    // Generate clean reference image for AI image-to-image / ControlNet / Gemini Vision
+    const hasMeas = opts.measurements !== undefined ? !!opts.measurements : false;
     const canvas = renderCanvas({
-      widthPx: opts.widthPx || 1536,
-      measurements: false,
-      annotations: false,
-      labels: false,
-      rulers: false,
-      grid: false,
+      widthPx: opts.widthPx || 1600,
+      measurements: hasMeas,
+      annotations: opts.annotations !== undefined ? !!opts.annotations : hasMeas,
+      labels: opts.labels !== undefined ? !!opts.labels : hasMeas,
+      rulers: opts.rulers !== undefined ? !!opts.rulers : hasMeas,
+      grid: opts.grid !== undefined ? !!opts.grid : false,
+      photo: opts.photo !== undefined ? !!opts.photo : true,
+      wall: opts.wall !== undefined ? !!opts.wall : true,
+      floor: opts.floor !== undefined ? !!opts.floor : true,
+      bgType: opts.bgType || 'white',
       background: opts.background || '#ffffff',
     });
-    return canvas.toDataURL('image/png');
+    return canvas.toDataURL(opts.mimeType || 'image/jpeg', opts.quality !== undefined ? opts.quality : 0.92);
   }
 
   async function copyToClipboard(opts = {}) {

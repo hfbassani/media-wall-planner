@@ -217,8 +217,8 @@
       }
     }
 
-    // Eye level ideal TV center snap (when el is a TV or eyeLevel guide is visible)
-    if (eyeLevel || el.type === 'tv' || el.label.toLowerCase().includes('tv')) {
+    // Eye level ideal TV center snap (when el is a TV/display or eyeLevel guide is visible)
+    if (eyeLevel || el.type.startsWith('tv') || el.type === 'screen_ust' || el.label.toLowerCase().includes('tv') || el.label.toLowerCase().includes('screen')) {
       const idealTvY = eyeLevelCm - el.height / 2;
       const dEye = Math.abs(proposedY - idealTvY);
       if (dEye < bestDistY) {

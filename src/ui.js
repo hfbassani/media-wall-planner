@@ -6,6 +6,8 @@
   const V = A.vocab;
 
   let leftSidebar, rightSidebar, stageToolbar;
+  let activePresetCat = 'all';
+  let presetFilterText = '';
 
   function init() {
     leftSidebar = document.getElementById('sidebar-left');
@@ -419,25 +421,80 @@
 
     // 4. Quick Add Presets Library
     const secPresets = U.h('div', { class: 'sidebar-section' });
-    secPresets.appendChild(U.h('div', { class: 'section-heading' }, 'Quick Add Presets'));
+    secPresets.appendChild(U.h('div', { class: 'section-heading' }, 'Architectural Presets Library'));
 
-    const presetsGrid = U.h('div', { class: 'presets-grid' });
-    for (const [key, p] of Object.entries(V.presets)) {
-      if (key === 'custom') continue;
-      const btn = U.h(
+    // Search Box
+    const searchBox = U.h('div', { class: 'preset-search-box' });
+    const searchInput = U.h('input', {
+      type: 'text',
+      class: 'preset-search-input',
+      placeholder: 'Search 30+ objects...',
+      value: presetFilterText,
+      oninput: (e) => {
+        presetFilterText = e.target.value.toLowerCase().trim();
+        refreshPresetsGrid();
+      },
+    });
+    searchBox.appendChild(searchInput);
+    secPresets.appendChild(searchBox);
+
+    // Category Tabs
+    const catTabs = U.h('div', { class: 'preset-category-tabs' });
+    const categories = V.categories || { all: { label: 'All' } };
+    for (const [catKey, catObj] of Object.entries(categories)) {
+      const tabBtn = U.h(
         'button',
         {
-          class: 'preset-item-btn',
+          class: `preset-cat-tab ${activePresetCat === catKey ? 'active' : ''}`,
           onclick: () => {
-            A.store.addPreset(key);
-            if (window.innerWidth <= 900) rightSidebar.classList.add('open');
+            activePresetCat = catKey;
+            catTabs.querySelectorAll('.preset-cat-tab').forEach((b) => b.classList.remove('active'));
+            tabBtn.classList.add('active');
+            refreshPresetsGrid();
           },
         },
-        U.h('span', null, p.label),
-        U.h('span', { class: 'preset-dims' }, `${p.width}×${p.height}`)
+        catObj.label
       );
-      presetsGrid.appendChild(btn);
+      catTabs.appendChild(tabBtn);
     }
+    secPresets.appendChild(catTabs);
+
+    const presetsGrid = U.h('div', { class: 'presets-grid' });
+    function refreshPresetsGrid() {
+      presetsGrid.innerHTML = '';
+      let matchCount = 0;
+      for (const [key, p] of Object.entries(V.presets)) {
+        if (key === 'custom') continue;
+        const matchesCat = activePresetCat === 'all' || p.category === activePresetCat;
+        const matchesQuery = !presetFilterText || p.label.toLowerCase().includes(presetFilterText) || (p.noun && p.noun.toLowerCase().includes(presetFilterText));
+        if (!matchesCat || !matchesQuery) continue;
+        matchCount++;
+
+        const btn = U.h(
+          'button',
+          {
+            class: 'preset-item-btn',
+            title: p.description || p.label,
+            onclick: () => {
+              A.store.addPreset(key);
+              if (window.innerWidth <= 900) rightSidebar.classList.add('open');
+            },
+          },
+          U.h('div', { class: 'preset-label-wrap' },
+            U.h('span', { class: 'preset-swatch-dot', style: { background: p.color } }),
+            U.h('span', null, p.label)
+          ),
+          U.h('span', { class: 'preset-dims' }, `${p.width}×${p.height}`)
+        );
+        presetsGrid.appendChild(btn);
+      }
+      if (matchCount === 0) {
+        presetsGrid.appendChild(
+          U.h('div', { style: { padding: '14px 8px', fontSize: 'var(--fs-xs)', color: 'var(--text-2)', textAlign: 'center' } }, 'No matching objects found.')
+        );
+      }
+    }
+    refreshPresetsGrid();
     secPresets.appendChild(presetsGrid);
 
     // Custom Block button
@@ -553,9 +610,9 @@
     secDims.appendChild(rowDim);
     secDims.appendChild(rowPos);
 
-    // Ergonomic TV Center Alignment Card (if selected element is a TV)
+    // Ergonomic TV Center Alignment Card (if selected element is a TV or display)
     let secTvErgo = null;
-    if (el.type === 'tv' || el.label.toLowerCase().includes('tv')) {
+    if (el.type.startsWith('tv') || el.type === 'screen_ust' || el.label.toLowerCase().includes('tv') || el.label.toLowerCase().includes('screen')) {
       secTvErgo = U.h('div', {
         class: 'sidebar-section',
         style: {
@@ -706,6 +763,28 @@
       'Under-Cabinet Downward Glow'
     );
     secLed.appendChild(chkUnderglow);
+
+    // AI Prompt Representation Card
+    const secAiPrompt = U.h('div', {
+      class: 'sidebar-section',
+      style: {
+        background: 'rgba(56, 189, 248, 0.05)',
+        padding: '10px 12px',
+        borderRadius: 'var(--r-md)',
+        border: '1px solid rgba(56, 189, 248, 0.22)',
+      },
+    });
+    secAiPrompt.appendChild(U.h('div', { class: 'section-heading', style: { color: 'var(--cyan)', marginBottom: '4px' } }, '✨ AI Prompt Representation'));
+    const pPreset = V.presets[el.type];
+    const pMood = V.moods[A.store.getState().mood];
+    const pTexDesc = (pMood && pMood.materials && pMood.materials[el.texture]) || (V.textures[el.texture] && V.textures[el.texture].phrase) || 'architectural finish';
+    const pObjDesc = (pPreset && pPreset.description) || `${el.label} custom component.`;
+    secAiPrompt.appendChild(
+      U.h('div', { style: { fontSize: '11px', color: 'var(--text-1)', lineHeight: '1.45', fontStyle: 'italic' } },
+        `"${pObjDesc} Finished in ${pTexDesc}."`
+      )
+    );
+    rightSidebar.appendChild(secAiPrompt);
 
     // Layer & Actions
     const secActions = U.h('div', { class: 'sidebar-section' });

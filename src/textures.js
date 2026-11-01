@@ -360,6 +360,284 @@
       ctx.fillRect(ix, iy, iw, ih);
       ctx.restore();
     },
+
+    marble(ctx, el, w, h, s) {
+      const c = el.color;
+      const rand = seeded(el, 'marble');
+      // Honed stone base with soft diagonal gradient
+      const base = ctx.createLinearGradient(0, 0, w, h);
+      base.addColorStop(0, U.shade(c, 0.04));
+      base.addColorStop(0.5, c);
+      base.addColorStop(1, U.shade(c, -0.04));
+      ctx.fillStyle = base;
+      ctx.fillRect(0, 0, w, h);
+
+      // Soft mineral clouding / mottling
+      noise(ctx, w, h, rand, 0.15, 0.025);
+
+      // Procedural flowing diagonal veins
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.clip();
+
+      const numVeins = Math.max(2, Math.min(6, Math.round((w + h) / (60 * s))));
+      const veinColor = U.luminance(c) > 0.4 ? U.shade(c, -0.38) : U.shade(c, 0.35);
+
+      for (let v = 0; v < numVeins; v++) {
+        const startX = (rand() * 1.4 - 0.2) * w;
+        const startY = -h * 0.1;
+        const endX = startX + (0.5 + rand() * 0.5) * w;
+        const endY = h * 1.1;
+
+        ctx.strokeStyle = U.rgba(veinColor, 0.12 + rand() * 0.18);
+        ctx.lineWidth = Math.max(0.8, (0.4 + rand() * 0.8) * s);
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+
+        const cp1x = startX + (endX - startX) * 0.35 + (rand() - 0.5) * 40 * s;
+        const cp1y = startY + (endY - startY) * 0.33 + (rand() - 0.5) * 20 * s;
+        const cp2x = startX + (endX - startX) * 0.65 + (rand() - 0.5) * 50 * s;
+        const cp2y = startY + (endY - startY) * 0.66 + (rand() - 0.5) * 20 * s;
+
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endX, endY);
+        ctx.stroke();
+
+        // Branching sub-veins
+        if (rand() < 0.75) {
+          ctx.strokeStyle = U.rgba(veinColor, 0.07 + rand() * 0.09);
+          ctx.lineWidth = Math.max(0.5, 0.25 * s);
+          ctx.beginPath();
+          const bx = cp1x;
+          const by = cp1y;
+          ctx.moveTo(bx, by);
+          ctx.quadraticCurveTo(bx + (rand() - 0.5) * 35 * s, by + 20 * s, bx + (rand() - 0.5) * 60 * s, by + 45 * s);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+
+      // Stone chamfer edge highlight
+      edgeShading(ctx, w, h, s);
+    },
+
+    travertine(ctx, el, w, h, s) {
+      const c = el.color;
+      const rand = seeded(el, 'travertine');
+
+      // Base warm stone
+      ctx.fillStyle = c;
+      ctx.fillRect(0, 0, w, h);
+
+      // Horizontal sediment bands
+      const bandHeight = Math.max(3, 1.4 * s);
+      const bands = Math.ceil(h / bandHeight);
+      for (let i = 0; i < bands; i++) {
+        const toneShift = (rand() - 0.5) * 0.12;
+        ctx.fillStyle = U.rgba(U.shade(c, toneShift), 0.25 + rand() * 0.2);
+        ctx.fillRect(0, i * bandHeight, w, bandHeight);
+      }
+
+      // Horizontal micropores and voids
+      const numPores = Math.min(250, Math.floor((w * h) / (18 * s * 18 * s)));
+      const poreColor = U.shade(c, -0.45);
+      for (let p = 0; p < numPores; p++) {
+        const px = rand() * w;
+        const py = rand() * h;
+        const pw = (1.5 + rand() * 4.5) * s;
+        const ph = Math.max(0.8, (0.3 + rand() * 0.6) * s);
+        ctx.fillStyle = U.rgba(poreColor, 0.22 + rand() * 0.25);
+        ctx.fillRect(px, py, pw, ph);
+      }
+
+      edgeShading(ctx, w, h, s);
+    },
+
+    fluted(ctx, el, w, h, s) {
+      const c = el.color;
+      const rand = seeded(el, 'fluted');
+
+      // Tighter pitch than slats (approx 1.8cm pitch)
+      let pitch = Math.max(4, 1.8 * s);
+      const count = Math.ceil(w / pitch);
+      const offset = (w - count * pitch) / 2;
+
+      ctx.fillStyle = U.shade(c, -0.45); // shadow grooves
+      ctx.fillRect(0, 0, w, h);
+
+      for (let i = 0; i < count; i++) {
+        const x = offset + i * pitch;
+        const tone = U.shade(c, (rand() - 0.5) * 0.08);
+
+        // Cylindrical rounded fluting gradient
+        const g = ctx.createLinearGradient(x, 0, x + pitch, 0);
+        g.addColorStop(0, U.shade(tone, -0.35));
+        g.addColorStop(0.2, tone);
+        g.addColorStop(0.5, U.shade(tone, 0.22)); // apex highlight
+        g.addColorStop(0.8, tone);
+        g.addColorStop(1, U.shade(tone, -0.38));
+
+        ctx.fillStyle = g;
+        ctx.fillRect(x + 0.5, 0, pitch - 1, h);
+      }
+
+      // Subtle vertical light falloff
+      const vg = ctx.createLinearGradient(0, 0, 0, h);
+      vg.addColorStop(0, 'rgba(0,0,0,0.14)');
+      vg.addColorStop(0.12, 'rgba(0,0,0,0)');
+      vg.addColorStop(0.88, 'rgba(0,0,0,0)');
+      vg.addColorStop(1, 'rgba(0,0,0,0.18)');
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, w, h);
+    },
+
+    concrete(ctx, el, w, h, s) {
+      const c = el.color;
+      const rand = seeded(el, 'concrete');
+
+      ctx.fillStyle = c;
+      ctx.fillRect(0, 0, w, h);
+
+      // Directional trowel passes / sweeping clouding
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.clip();
+      const numSweeps = Math.max(3, Math.min(10, Math.round((w + h) / (50 * s))));
+      for (let i = 0; i < numSweeps; i++) {
+        const sx = rand() * w;
+        const sy = rand() * h;
+        const sw = (20 + rand() * 40) * s;
+        const sh = (15 + rand() * 30) * s;
+        const tg = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(sw, sh));
+        const delta = (rand() - 0.5) * 0.16;
+        tg.addColorStop(0, U.rgba(U.shade(c, delta), 0.35));
+        tg.addColorStop(1, U.rgba(c, 0));
+        ctx.fillStyle = tg;
+        ctx.fillRect(sx - sw, sy - sh, sw * 2, sh * 2);
+      }
+      ctx.restore();
+
+      // Fine aggregate texture noise
+      noise(ctx, w, h, rand, 0.18, 0.04);
+      edgeShading(ctx, w, h, s);
+    },
+
+    metal(ctx, el, w, h, s) {
+      const c = el.color;
+      const rand = seeded(el, 'metal');
+
+      // Metallic gradient base
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, U.shade(c, 0.12));
+      g.addColorStop(0.5, c);
+      g.addColorStop(1, U.shade(c, -0.15));
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      // Fine brushed hairline micro-streaks
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.clip();
+      const lines = Math.min(120, Math.floor(h / Math.max(1, 0.6 * s)));
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i < lines; i++) {
+        const y = rand() * h;
+        const streakAlpha = 0.05 + rand() * 0.09;
+        ctx.strokeStyle = rand() < 0.5 ? `rgba(255,255,255,${streakAlpha})` : `rgba(0,0,0,${streakAlpha})`;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Anisotropic diagonal reflection sheen
+      const sheen = ctx.createLinearGradient(0, 0, w, h * 0.7);
+      sheen.addColorStop(0, 'rgba(255,255,255,0)');
+      sheen.addColorStop(0.42, 'rgba(255,255,255,0.18)');
+      sheen.addColorStop(0.5, 'rgba(255,255,255,0.02)');
+      sheen.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = sheen;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+
+      // Precision engineered chamfer edges
+      edgeShading(ctx, w, h, s);
+    },
+
+    fabric(ctx, el, w, h, s) {
+      const c = el.color;
+      const rand = seeded(el, 'fabric');
+      ctx.fillStyle = c;
+      ctx.fillRect(0, 0, w, h);
+
+      // Woven cross-hatch fabric pattern
+      const pitch = Math.max(2, Math.round(1 * s));
+      const tile = document.createElement('canvas');
+      tile.width = tile.height = pitch * 2;
+      const t = tile.getContext('2d');
+      t.fillStyle = U.rgba(U.shade(c, 0.15), 0.4);
+      t.fillRect(0, 0, pitch, pitch);
+      t.fillRect(pitch, pitch, pitch, pitch);
+      t.fillStyle = U.rgba(U.shade(c, -0.2), 0.35);
+      t.fillRect(pitch, 0, pitch, pitch);
+      t.fillRect(0, pitch, pitch, pitch);
+
+      ctx.fillStyle = ctx.createPattern(tile, 'repeat');
+      ctx.fillRect(0, 0, w, h);
+
+      // Organic linen slub noise
+      noise(ctx, w, h, rand, 0.12, 0.03);
+
+      // Soft fabric light-absorbent edge vignette
+      const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.75);
+      vg.addColorStop(0, 'rgba(0,0,0,0)');
+      vg.addColorStop(1, 'rgba(0,0,0,0.16)');
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, w, h);
+    },
+
+    mirror(ctx, el, w, h, s) {
+      const c = el.color;
+      const bezel = Math.max(2, 1.2 * s);
+
+      // Frame / bevel border
+      ctx.fillStyle = U.shade(c, -0.45);
+      ctx.fillRect(0, 0, w, h);
+
+      const ix = bezel, iy = bezel, iw = w - bezel * 2, ih = h - bezel * 2;
+
+      // Smoked mirror glass
+      const g = ctx.createLinearGradient(0, iy, 0, iy + ih);
+      g.addColorStop(0, U.shade(c, 0.15));
+      g.addColorStop(0.5, c);
+      g.addColorStop(1, U.shade(c, -0.25));
+      ctx.fillStyle = g;
+      ctx.fillRect(ix, iy, iw, ih);
+
+      // High-contrast diagonal reflection bands
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(ix, iy, iw, ih);
+      ctx.clip();
+
+      const sheen1 = ctx.createLinearGradient(ix, iy, ix + iw * 0.8, iy + ih);
+      sheen1.addColorStop(0, 'rgba(255,255,255,0)');
+      sheen1.addColorStop(0.3, 'rgba(255,255,255,0.24)');
+      sheen1.addColorStop(0.38, 'rgba(255,255,255,0.03)');
+      sheen1.addColorStop(0.65, 'rgba(255,255,255,0.12)');
+      sheen1.addColorStop(0.72, 'rgba(255,255,255,0)');
+      sheen1.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = sheen1;
+      ctx.fillRect(ix, iy, iw, ih);
+      ctx.restore();
+
+      // Polished mirror edge highlight
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(ix + 0.5, iy + 0.5, iw - 1, ih - 1);
+    },
   };
 
   function paint(ctx, el, w, h, s, time) {

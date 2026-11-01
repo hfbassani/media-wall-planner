@@ -323,22 +323,77 @@ html, body {
   color: var(--text-2);
 }
 
-/* Presets Library Buttons */
+/* Presets Library Buttons & Tabs */
+.preset-search-box {
+  margin-bottom: 8px;
+}
+.preset-search-input {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--text-0);
+  font-size: var(--fs-xs);
+  outline: none;
+  transition: border-color var(--t-fast);
+}
+.preset-search-input:focus {
+  border-color: var(--brass);
+}
+.preset-category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.preset-cat-tab {
+  padding: 3px 7px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  font-size: 10.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--t-fast);
+  white-space: nowrap;
+}
+.preset-cat-tab:hover {
+  color: var(--text-0);
+  border-color: var(--line-strong);
+}
+.preset-cat-tab.active {
+  background: var(--brass-soft);
+  border-color: var(--brass-strong);
+  color: var(--brass-strong);
+  font-weight: 600;
+}
 .presets-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 6px;
+  gap: 5px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.presets-grid::-webkit-scrollbar {
+  width: 4px;
+}
+.presets-grid::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 4px;
 }
 .preset-item-btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
+  padding: 7px 10px;
   background: var(--bg-2);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   color: var(--text-0);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-xs);
   font-weight: 500;
   cursor: pointer;
   transition: all var(--t-fast);
@@ -348,10 +403,28 @@ html, body {
   background: var(--bg-3);
   border-color: var(--brass);
 }
+.preset-label-wrap {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preset-swatch-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  display: inline-block;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
 .preset-dims {
-  font-size: var(--fs-xs);
+  font-size: 11px;
   color: var(--text-2);
   font-family: var(--font-mono);
+  margin-left: 6px;
+  flex-shrink: 0;
 }
 
 /* Texture Selector Grid */
@@ -950,39 +1023,60 @@ html, body {
 }
 
 /* Split slider comparison */
+.split-viewer-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: var(--bg-1);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  padding: var(--sp-3);
+}
+
 .split-viewer {
   position: relative;
   width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   overflow: hidden;
   user-select: none;
+  cursor: ew-resize;
+  border-radius: var(--r-md);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  background: #ffffff;
 }
-.split-img-cad, .split-img-render {
+
+.split-img-cad,
+.split-img-render {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  display: block;
 }
+
 .split-img-cad {
   background: #ffffff;
 }
-.split-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  overflow: hidden;
-}
+
 .split-handle {
   position: absolute;
   top: 0;
   bottom: 0;
   width: 3px;
+  transform: translateX(-50%);
   background: var(--brass-strong);
   cursor: ew-resize;
+  z-index: 10;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
 }
+
 .split-handle::after {
   content: '◂ ▸';
   position: absolute;
@@ -990,11 +1084,35 @@ html, body {
   left: 50%;
   transform: translate(-50%, -50%);
   background: var(--bg-0);
-  border: 1px solid var(--brass);
-  color: var(--brass);
-  font-size: 10px;
-  padding: 3px 6px;
-  border-radius: 10px;
+  border: 1.5px solid var(--brass-strong);
+  color: var(--brass-strong);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.split-badge {
+  position: absolute;
+  top: 12px;
+  padding: 4px 10px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  border-radius: var(--r-sm);
+  background: rgba(11, 13, 17, 0.8);
+  backdrop-filter: blur(4px);
+  color: var(--text-0);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  z-index: 5;
+  user-select: none;
+}
+.split-badge.left {
+  left: 12px;
+}
+.split-badge.right {
+  right: 12px;
 }
 
 /* Security notice banner */
@@ -1226,13 +1344,87 @@ html, body {
   const A = window.Arch2D;
 
   const textures = {
-    slats: { label: 'Vertical Wood Slats', defaultColor: '#b08d66', phrase: 'three-dimensional fluted timber slats with deep acoustic shadow grooves and matte oiled finish' },
-    woodgrain: { label: 'Natural Wood Grain', defaultColor: '#9a7552', phrase: 'continuous natural wood grain veneer with organic cathedral patterns and satin sheen' },
-    matte: { label: 'Matte Lacquer', defaultColor: '#d9d3c8', phrase: 'smooth architectural ultra-matte lacquer with subtle soft-touch finish' },
-    glass: { label: 'Glass / Screen', defaultColor: '#0d0f12', phrase: 'deep pitch-black bezel-less OLED glass with subtle dark ambient room reflections' },
-    mesh: { label: 'Acoustic Mesh', defaultColor: '#3a3a3c', phrase: 'fine tactile woven acoustic fabric with micro-mesh texture' },
-    niche: { label: 'Recessed Niche', defaultColor: '#cfc6b8', phrase: 'recessed open display niche with limewashed interior and warm downlighting' },
-    fireplace: { label: 'Linear Fireplace', defaultColor: '#141414', phrase: 'frameless linear electric fireplace with glowing ember bed and soft ambient flame ribbons' },
+    slats: {
+      label: 'Vertical Wood Slats',
+      defaultColor: '#b08d66',
+      phrase: 'three-dimensional fluted timber slats with deep acoustic shadow grooves and matte oiled finish',
+    },
+    woodgrain: {
+      label: 'Natural Wood Grain',
+      defaultColor: '#9a7552',
+      phrase: 'continuous natural wood grain veneer with organic cathedral patterns and satin sheen',
+    },
+    matte: {
+      label: 'Matte Lacquer',
+      defaultColor: '#d9d3c8',
+      phrase: 'smooth architectural ultra-matte lacquer with subtle soft-touch finish and hairline shadowlines',
+    },
+    glass: {
+      label: 'Glass / Screen',
+      defaultColor: '#0d0f12',
+      phrase: 'deep pitch-black bezel-less OLED glass with subtle dark ambient room reflections',
+    },
+    mesh: {
+      label: 'Acoustic Mesh',
+      defaultColor: '#3a3a3c',
+      phrase: 'fine tactile woven acoustic fabric with micro-mesh texture and micro-perforations',
+    },
+    niche: {
+      label: 'Recessed Niche',
+      defaultColor: '#cfc6b8',
+      phrase: 'recessed open display niche with limewashed interior and warm downlighting',
+    },
+    fireplace: {
+      label: 'Linear Fireplace',
+      defaultColor: '#141414',
+      phrase: 'frameless linear electric fireplace with glowing ember bed and soft ambient flame ribbons',
+    },
+    marble: {
+      label: 'Honed Marble Slab',
+      defaultColor: '#e8e4dc',
+      phrase: 'monolithic bookmatched honed porcelain marble slab with delicate organic grey and champagne veining',
+    },
+    travertine: {
+      label: 'Roman Travertine',
+      defaultColor: '#d8cca8',
+      phrase: 'warm Roman travertine stone slab featuring organic horizontal sediment stratification and natural surface micropores',
+    },
+    fluted: {
+      label: 'Micro-Ribbed Fluting',
+      defaultColor: '#9e7d5c',
+      phrase: 'tight three-dimensional micro-fluted tambour paneling with rhythmic rounded acoustic reeds and deep shadow grooves',
+    },
+    concrete: {
+      label: 'Troweled Micro-Cement',
+      defaultColor: '#b2aba0',
+      phrase: 'hand-troweled architectural micro-cement with soft mottled mineral clouding and raw industrial texture',
+    },
+    metal: {
+      label: 'Brushed Metal',
+      defaultColor: '#6b6357',
+      phrase: 'architectural brushed metallic alloy paneling with directional hairline graining and subtle champagne brass reflections',
+    },
+    fabric: {
+      label: 'Acoustic Linen',
+      defaultColor: '#beb5a5',
+      phrase: 'heavyweight textured acoustic wall fabric with tactile organic linen slub weave and sound-absorbing matte texture',
+    },
+    mirror: {
+      label: 'Smoked Bronze Mirror',
+      defaultColor: '#35302c',
+      phrase: 'smoked bronze tinted architectural mirror with warm high-clarity reflections and polished beveled edge details',
+    },
+  };
+
+  const categories = {
+    all: { label: 'All', icon: '✦' },
+    displays: { label: 'Displays', icon: '📺' },
+    audio: { label: 'Audio', icon: '🔊' },
+    millwork: { label: 'Cabinetry', icon: '🗄️' },
+    shelving: { label: 'Shelving', icon: '📚' },
+    backdrops: { label: 'Backdrops', icon: '🪵' },
+    fireplace: { label: 'Fireplace', icon: '🔥' },
+    props: { label: 'Props & Lights', icon: '💡' },
   };
 
   const moods = {
@@ -1255,6 +1447,13 @@ html, body {
         mesh: 'natural oatmeal linen acoustic fabric with tactile micro-weave',
         niche: 'limewashed recessed niche with solid white oak shelving and curated ceramic vessels',
         fireplace: 'linear electric fireplace with a soft warm amber ember bed',
+        marble: 'honed ivory Taj Mahal quartzite stone slab with soft warm caramel veining and silky matte sheen',
+        travertine: 'unfilled Roman vein-cut travertine in warm ivory and oat tones with organic horizontal pores',
+        fluted: 'natural white oak fine-reeded micro-fluted paneling with warm satin oil finish',
+        concrete: 'warm sand-toned micro-cement with delicate hand-troweled mineral textures',
+        metal: 'warm champagne brushed bronze with subtle matte satin sheen',
+        fabric: 'natural oatmeal linen acoustic fabric with tactile organic slub weave',
+        mirror: 'smoked warm champagne bronze architectural mirror with subtle beveled edge',
       },
     },
     darkLuxury: {
@@ -1272,10 +1471,17 @@ html, body {
         slats: 'deep smoked eucalyptus fluted slats with dark bronze metallic reveals',
         woodgrain: 'smoked eucalyptus architectural veneer with rich linear grain',
         matte: 'deep charcoal ultra-matte lacquer with recessed brushed brass trims',
-        glass: 'smoked bronze anti-reflective glass panel',
+        glass: 'smoked bronze anti-reflective glass panel with razor bezels',
         mesh: 'charcoal acoustic wool fabric with fine micro-perforations',
         niche: 'honed Nero Marquina marble-lined niche with delicate white veining and integrated warm mini-spotlight',
         fireplace: 'frameless linear fireplace with tall amber flames and blackened steel surround',
+        marble: 'polished Nero Marquina marble with dramatic high-contrast white crystalline veining',
+        travertine: 'dark silver titanium travertine with deep charcoal horizontal striations',
+        fluted: 'smoked dark walnut fluted tambour paneling with deep shadow reveals',
+        concrete: 'deep charcoal polished concrete with burnished bronze highlights',
+        metal: 'dark brushed brass and blackened architectural bronze with luminous edge highlights',
+        fabric: 'deep charcoal acoustic wool felt with fine micro-perforations',
+        mirror: 'deep smoked bronze tinted architectural mirror with warm high-clarity reflections',
       },
     },
     scandi: {
@@ -1291,12 +1497,19 @@ html, body {
       accent: '#d8c3a0',
       materials: {
         slats: 'pale white ash timber slats with natural light wood grain',
-        woodgrain: 'bleached white ash architectural veneer',
+        woodgrain: 'bleached white ash architectural veneer with subtle organic grain',
         matte: 'chalk-white ultra-matte lacquer with handleless push-latch millwork',
-        glass: 'ultra-slim OLED glass display',
+        glass: 'ultra-slim OLED glass display with razor-thin white ash or silver bezel',
         mesh: 'light heather grey wool acoustic fabric',
         niche: 'airy open display niche in pale white ash with minimal Scandinavian ceramic styling',
         fireplace: 'minimal linear fireplace with a clean ribbon flame line',
+        marble: 'honed white Carrara marble slab with soft feathered misty grey veining',
+        travertine: 'pale cream honed travertine with soft natural light reflection',
+        fluted: 'bleached ash micro-ribbed paneling with soft natural light diffusion',
+        concrete: 'smooth pale cloud-grey mineral micro-cement wall finish',
+        metal: 'ultra-matte brushed champagne aluminum with crisp hair-thin seams',
+        fabric: 'pale heather-grey acoustic wool with clean Scandinavian texture',
+        mirror: 'low-iron silver float mirror with ultra-minimalist white ash frame',
       },
     },
     industrial: {
@@ -1318,20 +1531,419 @@ html, body {
         mesh: 'perforated charcoal industrial metal mesh with tactile texture',
         niche: 'open architectural shelf framed in blackened steel with exposed weld details',
         fireplace: 'linear fireplace recessed in a heavy blackened steel architectural hearth',
+        marble: 'raw Pietra Cardosa dark grey stone slab with subtle industrial mineral flecks',
+        travertine: 'weathered raw porous travertine block with exposed natural pitting',
+        fluted: 'charcoal powder-coated fluted acoustic steel paneling',
+        concrete: 'industrial board-formed architectural raw concrete with faint formwork seam lines',
+        metal: 'blackened cold-rolled raw steel with visible mill scale and industrial patina',
+        fabric: 'heavy charcoal woven industrial canvas with acoustic felt backing',
+        mirror: 'antiqued smoked blackened industrial mirror panel with subtle edge distressing',
       },
     },
   };
 
-  /* Standard components (project.md §3.2). y = default bottom edge AFF in cm. */
+  /* Standard architectural components with natural language descriptions for generative AI. */
   const presets = {
-    tv: { label: 'OLED 65" TV', width: 145, height: 83, texture: 'glass', color: '#0d0f12', y: 100, noun: 'ultra-thin flush-mounted 65-inch OLED television' },
-    soundbar: { label: 'Dolby Atmos Soundbar', width: 110, height: 10, texture: 'mesh', color: '#2b2b2d', y: 85, noun: 'slim architectural Dolby Atmos soundbar' },
-    fireplace: { label: 'Linear Electric Fireplace', width: 150, height: 40, texture: 'fireplace', color: '#141414', y: 45, noun: 'linear electric fireplace' },
-    credenza: { label: 'Floating Low Credenza', width: 240, height: 45, texture: 'woodgrain', color: '#8a6a4a', y: 15, noun: 'floating low credenza with continuous grain', ledUnderglow: true },
-    slats: { label: 'Vertical Slat Feature Panel', width: 120, height: 280, texture: 'slats', color: '#b08d66', y: 0, noun: 'full-height vertical fluted timber slat feature panel' },
-    bookshelf: { label: 'Recessed Open Bookshelf', width: 80, height: 160, texture: 'niche', color: '#cfc6b8', y: 70, noun: 'recessed open display bookshelf' },
-    upper: { label: 'Upper Storage Cupboards', width: 240, height: 60, texture: 'matte', color: '#d9d3c8', y: 200, noun: 'row of handleless upper storage cupboards' },
-    custom: { label: 'Custom Block', width: 50, height: 50, texture: 'matte', color: '#9aa3ad', y: 0, noun: 'custom architectural millwork module' },
+    // === Category: Displays ===
+    tv_55: {
+      label: 'OLED 55" TV',
+      category: 'displays',
+      width: 123,
+      height: 71,
+      texture: 'glass',
+      color: '#0d0f12',
+      y: 100,
+      noun: 'flush-mounted 55-inch OLED television screen',
+      description: 'A 55-inch flush wall-mounted OLED television display featuring an ultra-slim razor-thin matte black bezel, anti-reflective pitch-black glass panel, and subtle ambient natural room reflections across the darkened screen surface.',
+    },
+    tv: {
+      label: 'OLED 65" TV',
+      category: 'displays',
+      width: 145,
+      height: 83,
+      texture: 'glass',
+      color: '#0d0f12',
+      y: 95,
+      noun: 'ultra-thin flush-mounted 65-inch OLED television',
+      description: 'A flagship 65-inch ultra-thin OLED television screen mounted completely flush against the feature wall with near-invisible hairline bezels, deep true-black panel depth, and concealed in-wall cable routing.',
+    },
+    tv_75: {
+      label: 'OLED 75" TV',
+      category: 'displays',
+      width: 167,
+      height: 96,
+      texture: 'glass',
+      color: '#0d0f12',
+      y: 90,
+      noun: 'monumental 75-inch 4K OLED home theater display',
+      description: 'An expansive 75-inch premium 4K OLED television screen commanding the central elevation, featuring seamless edge-to-edge dark glass with soft ambient light sheen and zero visible framing.',
+    },
+    tv_85: {
+      label: 'OLED 85" TV',
+      category: 'displays',
+      width: 190,
+      height: 108,
+      texture: 'glass',
+      color: '#0d0f12',
+      y: 85,
+      noun: 'grand 85-inch cinema-scale OLED television',
+      description: 'A cinema-scale 85-inch widescreen OLED display mounted flush at spectator eye level, showcasing architectural presence with deep black glass, anti-glare coating, and crisp perimeter shadow lines.',
+    },
+    tv_frame: {
+      label: 'The Frame TV 65"',
+      category: 'displays',
+      width: 145,
+      height: 83,
+      texture: 'matte',
+      color: '#d9cfbe',
+      y: 95,
+      noun: 'framed lifestyle art television in custom timber frame',
+      description: 'A lifestyle art television mounted flush in a slender architectural beveled pale timber picture frame, displaying an ultra-matte non-reflective gallery canvas surface that seamlessly doubles as fine wall art.',
+    },
+    screen_ust: {
+      label: 'UST Projector Screen 100"',
+      category: 'displays',
+      width: 221,
+      height: 124,
+      texture: 'mesh',
+      color: '#20232a',
+      y: 75,
+      noun: '100-inch fixed-frame ambient light rejecting projector screen',
+      description: 'A 100-inch fixed-frame ultra-short-throw ambient light rejecting (ALR) projector screen with a 10mm micro-thin matte black aluminum frame and high-contrast dark optical projection surface.',
+    },
+
+    // === Category: Audio & AV Tech ===
+    soundbar: {
+      label: 'Dolby Atmos Soundbar',
+      category: 'audio',
+      width: 110,
+      height: 10,
+      texture: 'mesh',
+      color: '#2b2b2d',
+      y: 80,
+      noun: 'slim architectural Dolby Atmos soundbar',
+      description: 'A low-profile architectural Dolby Atmos soundbar cantilevered beneath the television display, wrapped in seamless dark acoustic woven fabric with precision micro-beveled endcaps.',
+    },
+    speaker_inwall: {
+      label: 'In-Wall Speaker (Pair)',
+      category: 'audio',
+      width: 26,
+      height: 45,
+      texture: 'mesh',
+      color: '#3a3a3c',
+      y: 95,
+      noun: 'flush-mount architectural in-wall speaker',
+      description: 'A high-fidelity architectural in-wall speaker installed completely flush into the wall surface, concealed behind a paintable magnetic micro-perforated acoustic metal grille.',
+    },
+    subwoofer: {
+      label: 'Floor Subwoofer',
+      category: 'audio',
+      width: 40,
+      height: 44,
+      texture: 'matte',
+      color: '#1c1e22',
+      y: 0,
+      noun: 'minimalist architectural floor subwoofer cabinet',
+      description: 'A minimalist cube subwoofer enclosure resting cleanly on the finished floor, finished in durable satin lacquer with rounded corners and an acoustically transparent fabric front baffle.',
+    },
+    av_bay: {
+      label: 'Recessed AV Bay',
+      category: 'audio',
+      width: 60,
+      height: 22,
+      texture: 'mesh',
+      color: '#222428',
+      y: 25,
+      noun: 'recessed ventilated AV media equipment bay',
+      description: 'An integrated ventilated media equipment bay recessed into the millwork, fitted with infrared-transparent acoustic micro-slat doors concealing home theater amplifiers and game consoles.',
+    },
+
+    // === Category: Cabinetry & Millwork ===
+    credenza_180: {
+      label: 'Floating Console 180cm',
+      category: 'millwork',
+      width: 180,
+      height: 40,
+      texture: 'woodgrain',
+      color: '#9a7552',
+      y: 18,
+      noun: 'compact floating low media credenza',
+      description: 'A compact 180cm cantilevered floating media console suspended 18cm above finished floor, featuring continuous horizontal grain wrap over 45-degree mitered waterfall edges, push-latch drawers, and warm downward under-cabinet LED wash.',
+      ledUnderglow: true,
+    },
+    credenza: {
+      label: 'Floating Console 240cm',
+      category: 'millwork',
+      width: 240,
+      height: 45,
+      texture: 'woodgrain',
+      color: '#8a6a4a',
+      y: 18,
+      noun: 'floating low credenza with continuous grain',
+      description: 'A wide 240cm floating low credenza solidly anchored to the feature wall with seamless continuous grain flow, shadowline recessed finger pulls, integrated cable passages, and concealed downward underglow.',
+      ledUnderglow: true,
+    },
+    bench_plinth: {
+      label: 'Floor Plinth Bench 280cm',
+      category: 'millwork',
+      width: 280,
+      height: 35,
+      texture: 'woodgrain',
+      color: '#7e6347',
+      y: 0,
+      noun: 'monolithic low-profile floor joinery plinth bench',
+      description: 'An elongated monolithic low-profile architectural floor bench resting on a recessed shadowline toe-kick plinth, offering generous horizontal anchoring with thick solid timber edging.',
+    },
+    tower_vert: {
+      label: 'Tall Storage Tower',
+      category: 'millwork',
+      width: 50,
+      height: 240,
+      texture: 'matte',
+      color: '#c8c0b2',
+      y: 0,
+      noun: 'floor-to-ceiling vertical millwork storage tower',
+      description: 'A slender floor-to-ceiling vertical millwork storage cabinet column with seamless full-height push-latch doors and precision 5mm architectural reveal gaps flanking the media wall.',
+    },
+    upper: {
+      label: 'Upper Cupboards 240cm',
+      category: 'millwork',
+      width: 240,
+      height: 60,
+      texture: 'matte',
+      color: '#d9d3c8',
+      y: 200,
+      noun: 'row of handleless upper storage cupboards',
+      description: 'A horizontal band of handleless overhead storage cupboards mounted flush along the upper elevation, equipped with push-to-open upward bi-fold flaps and concealed downward LED task lighting.',
+    },
+    credenza_tambour: {
+      label: 'Fluted Tambour Console 200cm',
+      category: 'millwork',
+      width: 200,
+      height: 42,
+      texture: 'fluted',
+      color: '#9e7d5c',
+      y: 18,
+      noun: 'floating fluted tambour timber media credenza',
+      description: 'A floating timber media console detailed with curved radius corners and fine vertical fluted tambour reeding, suspended above the floor with integrated warm ambient under-cabinet glow.',
+      ledUnderglow: true,
+    },
+
+    // === Category: Shelving & Niches ===
+    shelf_float: {
+      label: 'Thick Floating Shelf 150cm',
+      category: 'shelving',
+      width: 150,
+      height: 6,
+      texture: 'woodgrain',
+      color: '#9a7552',
+      y: 135,
+      noun: 'cantilevered thick solid timber floating shelf',
+      description: 'A minimalist 6cm thick solid timber floating display shelf cleanly cantilevered from the backdrop with hidden internal steel brackets, styled with curated art books and stoneware vessels.',
+    },
+    shelf_float_long: {
+      label: 'Full-Span Floating Shelf 240cm',
+      category: 'shelving',
+      width: 240,
+      height: 6,
+      texture: 'woodgrain',
+      color: '#9a7552',
+      y: 140,
+      noun: 'continuous full-span architectural floating shelf',
+      description: 'A continuous 240cm long architectural floating display shelf extending across the wall span, featuring concealed downward LED grazing illumination casting soft light onto the wall below.',
+    },
+    bookshelf: {
+      label: 'Recessed Display Niche',
+      category: 'shelving',
+      width: 80,
+      height: 160,
+      texture: 'niche',
+      color: '#cfc6b8',
+      y: 70,
+      noun: 'recessed open display bookshelf niche',
+      description: 'A tall recessed open display niche inset into the wall plane, organized with asymmetric shelves, warm recessed miniature ceiling spotlights, and curated ceramic objects.',
+    },
+    niche_bar: {
+      label: 'Horizontal Bar Niche 160cm',
+      category: 'shelving',
+      width: 160,
+      height: 45,
+      texture: 'niche',
+      color: '#cfc6b8',
+      y: 130,
+      noun: 'horizontal recessed illuminated bar display niche',
+      description: 'A wide horizontal display niche recessed into the upper wall, detailed with an illuminated stone interior back-panel, subtle downlighting, and curated glassware.',
+      ledHalo: true,
+    },
+    shadow_box: {
+      label: 'Square Shadow Box 55cm',
+      category: 'shelving',
+      width: 55,
+      height: 55,
+      texture: 'matte',
+      color: '#c5bdb0',
+      y: 115,
+      noun: 'architectural cubic shadow box display cubby',
+      description: 'A minimalist open cubic display shadow box with thin beveled metal or lacquered outer casing, framing a single sculptural art piece with focused warm downlight.',
+    },
+
+    // === Category: Backdrops & Cladding ===
+    slats: {
+      label: 'Vertical Slat Panel 120cm',
+      category: 'backdrops',
+      width: 120,
+      height: 280,
+      texture: 'slats',
+      color: '#b08d66',
+      y: 0,
+      noun: 'full-height vertical fluted timber slat feature panel',
+      description: 'A full-height architectural feature panel constructed of precision vertical fluted timber slats mounted over acoustic black felt backing, illuminated with soft vertical perimeter LED halo backlighting.',
+      ledHalo: true,
+    },
+    slab_marble: {
+      label: 'Bookmatched Marble Slab',
+      category: 'backdrops',
+      width: 140,
+      height: 280,
+      texture: 'marble',
+      color: '#e8e4dc',
+      y: 0,
+      noun: 'monumental full-height bookmatched porcelain marble slab',
+      description: 'A monumental floor-to-ceiling bookmatched porcelain marble slab with dramatic continuous diagonal veining, floating slightly off the wall with concealed warm 2700K perimeter LED edge halo lighting.',
+      ledHalo: true,
+    },
+    slab_travertine: {
+      label: 'Roman Travertine Slab',
+      category: 'backdrops',
+      width: 150,
+      height: 280,
+      texture: 'travertine',
+      color: '#d8cca8',
+      y: 0,
+      noun: 'full-height honed Roman travertine stone feature wall',
+      description: 'A full-height accent wall panel clad in vein-cut honed Roman travertine with soft horizontal sediment striations, tactile natural micropores, and subtle architectural brass shadow reveals.',
+      ledHalo: true,
+    },
+    panel_backer: {
+      label: 'Backlit Backer Panel',
+      category: 'backdrops',
+      width: 260,
+      height: 160,
+      texture: 'matte',
+      color: '#cdc5b6',
+      y: 50,
+      noun: 'floating architectural backer panel with perimeter LED halo',
+      description: 'A floating rectangular millwork backer panel serving as a unified mounting backdrop for the TV display and credenza, creating a soft continuous floating halo of warm ambient light.',
+      ledHalo: true,
+    },
+    panel_concrete: {
+      label: 'Micro-Cement Panel',
+      category: 'backdrops',
+      width: 160,
+      height: 280,
+      texture: 'concrete',
+      color: '#b2aba0',
+      y: 0,
+      noun: 'architectural hand-troweled micro-cement feature panel',
+      description: 'A tall textural feature panel finished in seamless hand-troweled architectural micro-cement, exhibiting subtle mineral mottling and soft industrial light absorption.',
+    },
+
+    // === Category: Fireplaces & Hearths ===
+    fireplace: {
+      label: 'Linear Fireplace 150cm',
+      category: 'fireplace',
+      width: 150,
+      height: 40,
+      texture: 'fireplace',
+      color: '#141414',
+      y: 45,
+      noun: 'linear electric fireplace with glowing flame ribbon',
+      description: 'A modern frameless linear electric fireplace recessed flush into the wall hearth, displaying a realistic flickering amber flame ribbon rising through an illuminated glowing crystal ember bed.',
+    },
+    fireplace_wide: {
+      label: 'Panoramic Fireplace 200cm',
+      category: 'fireplace',
+      width: 200,
+      height: 42,
+      texture: 'fireplace',
+      color: '#141414',
+      y: 40,
+      noun: 'extra-wide 200cm panoramic architectural linear fireplace',
+      description: 'An expansive 200cm panoramic linear architectural fireplace recessed into the lower hearth wall, producing a grand continuous ribbon of warm amber flame with dark reflective firebox glass.',
+    },
+    hearth_stone: {
+      label: 'Floating Stone Hearth 280cm',
+      category: 'fireplace',
+      width: 280,
+      height: 25,
+      texture: 'marble',
+      color: '#d5cfc4',
+      y: 12,
+      noun: 'cantilevered monolithic stone hearth bench',
+      description: 'A heavy cantilevered monolithic stone hearth bench extending horizontally beneath the fireplace, floating 12cm above the floor with seamless mitered stone edges and soft downward floor wash lighting.',
+      ledUnderglow: true,
+    },
+
+    // === Category: Lighting & Elevation Props ===
+    sconce_linear: {
+      label: 'Linear Wall Sconce 110cm',
+      category: 'props',
+      width: 5,
+      height: 110,
+      texture: 'metal',
+      color: '#8c7b64',
+      y: 90,
+      noun: 'slender architectural vertical brass linear LED wall sconce',
+      description: 'A slender 110cm architectural vertical linear wall sconce crafted from brushed satin brass, emitting soft diffused bidirectional light against the backdrop wall.',
+      ledHalo: true,
+    },
+    light_picture: {
+      label: 'Picture Light 70cm',
+      category: 'props',
+      width: 70,
+      height: 8,
+      texture: 'metal',
+      color: '#8c7b64',
+      y: 180,
+      noun: 'slim horizontal brushed brass gallery picture light fixture',
+      description: 'A slim horizontal brushed brass museum-grade picture light fixture mounted directly above the artwork, casting a precise downward warm glow over the display.',
+      ledHalo: true,
+    },
+    prop_art: {
+      label: 'Framed Canvas Art',
+      category: 'props',
+      width: 70,
+      height: 95,
+      texture: 'woodgrain',
+      color: '#e5dfd4',
+      y: 110,
+      noun: 'gallery-framed contemporary minimalist canvas painting',
+      description: 'A gallery-framed large contemporary minimalist canvas painting featuring neutral textured abstract plaster strokes within a slim solid white oak floating frame.',
+    },
+    prop_plant: {
+      label: 'Ceramic Floor Planter & Ficus',
+      category: 'props',
+      width: 45,
+      height: 160,
+      texture: 'niche',
+      color: '#626c59',
+      y: 0,
+      noun: 'tall sculptural ceramic floor planter with indoor botanical greenery',
+      description: 'A large handcrafted matte ceramic floor planter holding a mature architectural indoor ficus plant with sculptural green foliage, adding organic warmth and height contrast.',
+    },
+
+    // Generic fallback custom block
+    custom: {
+      label: 'Custom Block',
+      category: 'millwork',
+      width: 50,
+      height: 50,
+      texture: 'matte',
+      color: '#9aa3ad',
+      y: 0,
+      noun: 'custom architectural millwork module',
+      description: 'A custom modular architectural millwork block with clean shadowlines and adaptable finishes.',
+    },
   };
 
   /* Prompt tuning chips (project.md §4.2). */
@@ -1341,6 +1953,7 @@ html, body {
       'Soft Morning Window Light via Sheer Curtains',
       'Moody Evening Ambient Glow',
       'Diffused Downward Under-Cabinet Wash',
+      'Warm Grazing Light Across Textured Stone',
     ],
     Camera: [
       '35mm Tilt-Shift Architectural Lens (Zero Distortion)',
@@ -1351,7 +1964,8 @@ html, body {
     Materials: [
       'Tactile Fluted Oak with Black Acoustic Felt',
       'Hand-Troweled Limewash Plaster Texture',
-      'Honed Calacatta Viola Marble Niche',
+      'Honed Bookmatched Calacatta Marble Slab',
+      'Pitted Roman Travertine Stone Panels',
       'Seamless Waterfall Mitered Edge Veneer',
     ],
     Realism: [
@@ -1372,12 +1986,12 @@ html, body {
     snapPx: 8, // magnetic snap threshold in screen pixels
     minSizeCm: 1,
     defaultEyeLevelCm: 105, // Ergonomic seated eye level AFF (~42 inches, CEDIA/THX standard)
-    eyeComfortBandCm: 10,   // Comfortable vertical eye range: ±10 cm (95–115 cm AFF)
+    eyeComfortBandCm: 10, // Comfortable vertical eye range: ±10 cm (95–115 cm AFF)
     midjourneyVersion: '6.1', // per project.md §4.1 — change here when Midjourney updates
     maxPromptUrlChars: 1800,
   };
 
-  A.vocab = { textures, moods, presets, chips, ledTemps, config };
+  A.vocab = { textures, categories, moods, presets, chips, ledTemps, config };
 })();
 </script>
 <script>
@@ -3312,6 +3926,284 @@ html, body {
       ctx.fillRect(ix, iy, iw, ih);
       ctx.restore();
     },
+
+    marble(ctx, el, w, h, s) {
+      const c = el.color;
+      const rand = seeded(el, 'marble');
+      // Honed stone base with soft diagonal gradient
+      const base = ctx.createLinearGradient(0, 0, w, h);
+      base.addColorStop(0, U.shade(c, 0.04));
+      base.addColorStop(0.5, c);
+      base.addColorStop(1, U.shade(c, -0.04));
+      ctx.fillStyle = base;
+      ctx.fillRect(0, 0, w, h);
+
+      // Soft mineral clouding / mottling
+      noise(ctx, w, h, rand, 0.15, 0.025);
+
+      // Procedural flowing diagonal veins
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.clip();
+
+      const numVeins = Math.max(2, Math.min(6, Math.round((w + h) / (60 * s))));
+      const veinColor = U.luminance(c) > 0.4 ? U.shade(c, -0.38) : U.shade(c, 0.35);
+
+      for (let v = 0; v < numVeins; v++) {
+        const startX = (rand() * 1.4 - 0.2) * w;
+        const startY = -h * 0.1;
+        const endX = startX + (0.5 + rand() * 0.5) * w;
+        const endY = h * 1.1;
+
+        ctx.strokeStyle = U.rgba(veinColor, 0.12 + rand() * 0.18);
+        ctx.lineWidth = Math.max(0.8, (0.4 + rand() * 0.8) * s);
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+
+        const cp1x = startX + (endX - startX) * 0.35 + (rand() - 0.5) * 40 * s;
+        const cp1y = startY + (endY - startY) * 0.33 + (rand() - 0.5) * 20 * s;
+        const cp2x = startX + (endX - startX) * 0.65 + (rand() - 0.5) * 50 * s;
+        const cp2y = startY + (endY - startY) * 0.66 + (rand() - 0.5) * 20 * s;
+
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endX, endY);
+        ctx.stroke();
+
+        // Branching sub-veins
+        if (rand() < 0.75) {
+          ctx.strokeStyle = U.rgba(veinColor, 0.07 + rand() * 0.09);
+          ctx.lineWidth = Math.max(0.5, 0.25 * s);
+          ctx.beginPath();
+          const bx = cp1x;
+          const by = cp1y;
+          ctx.moveTo(bx, by);
+          ctx.quadraticCurveTo(bx + (rand() - 0.5) * 35 * s, by + 20 * s, bx + (rand() - 0.5) * 60 * s, by + 45 * s);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+
+      // Stone chamfer edge highlight
+      edgeShading(ctx, w, h, s);
+    },
+
+    travertine(ctx, el, w, h, s) {
+      const c = el.color;
+      const rand = seeded(el, 'travertine');
+
+      // Base warm stone
+      ctx.fillStyle = c;
+      ctx.fillRect(0, 0, w, h);
+
+      // Horizontal sediment bands
+      const bandHeight = Math.max(3, 1.4 * s);
+      const bands = Math.ceil(h / bandHeight);
+      for (let i = 0; i < bands; i++) {
+        const toneShift = (rand() - 0.5) * 0.12;
+        ctx.fillStyle = U.rgba(U.shade(c, toneShift), 0.25 + rand() * 0.2);
+        ctx.fillRect(0, i * bandHeight, w, bandHeight);
+      }
+
+      // Horizontal micropores and voids
+      const numPores = Math.min(250, Math.floor((w * h) / (18 * s * 18 * s)));
+      const poreColor = U.shade(c, -0.45);
+      for (let p = 0; p < numPores; p++) {
+        const px = rand() * w;
+        const py = rand() * h;
+        const pw = (1.5 + rand() * 4.5) * s;
+        const ph = Math.max(0.8, (0.3 + rand() * 0.6) * s);
+        ctx.fillStyle = U.rgba(poreColor, 0.22 + rand() * 0.25);
+        ctx.fillRect(px, py, pw, ph);
+      }
+
+      edgeShading(ctx, w, h, s);
+    },
+
+    fluted(ctx, el, w, h, s) {
+      const c = el.color;
+      const rand = seeded(el, 'fluted');
+
+      // Tighter pitch than slats (approx 1.8cm pitch)
+      let pitch = Math.max(4, 1.8 * s);
+      const count = Math.ceil(w / pitch);
+      const offset = (w - count * pitch) / 2;
+
+      ctx.fillStyle = U.shade(c, -0.45); // shadow grooves
+      ctx.fillRect(0, 0, w, h);
+
+      for (let i = 0; i < count; i++) {
+        const x = offset + i * pitch;
+        const tone = U.shade(c, (rand() - 0.5) * 0.08);
+
+        // Cylindrical rounded fluting gradient
+        const g = ctx.createLinearGradient(x, 0, x + pitch, 0);
+        g.addColorStop(0, U.shade(tone, -0.35));
+        g.addColorStop(0.2, tone);
+        g.addColorStop(0.5, U.shade(tone, 0.22)); // apex highlight
+        g.addColorStop(0.8, tone);
+        g.addColorStop(1, U.shade(tone, -0.38));
+
+        ctx.fillStyle = g;
+        ctx.fillRect(x + 0.5, 0, pitch - 1, h);
+      }
+
+      // Subtle vertical light falloff
+      const vg = ctx.createLinearGradient(0, 0, 0, h);
+      vg.addColorStop(0, 'rgba(0,0,0,0.14)');
+      vg.addColorStop(0.12, 'rgba(0,0,0,0)');
+      vg.addColorStop(0.88, 'rgba(0,0,0,0)');
+      vg.addColorStop(1, 'rgba(0,0,0,0.18)');
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, w, h);
+    },
+
+    concrete(ctx, el, w, h, s) {
+      const c = el.color;
+      const rand = seeded(el, 'concrete');
+
+      ctx.fillStyle = c;
+      ctx.fillRect(0, 0, w, h);
+
+      // Directional trowel passes / sweeping clouding
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.clip();
+      const numSweeps = Math.max(3, Math.min(10, Math.round((w + h) / (50 * s))));
+      for (let i = 0; i < numSweeps; i++) {
+        const sx = rand() * w;
+        const sy = rand() * h;
+        const sw = (20 + rand() * 40) * s;
+        const sh = (15 + rand() * 30) * s;
+        const tg = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(sw, sh));
+        const delta = (rand() - 0.5) * 0.16;
+        tg.addColorStop(0, U.rgba(U.shade(c, delta), 0.35));
+        tg.addColorStop(1, U.rgba(c, 0));
+        ctx.fillStyle = tg;
+        ctx.fillRect(sx - sw, sy - sh, sw * 2, sh * 2);
+      }
+      ctx.restore();
+
+      // Fine aggregate texture noise
+      noise(ctx, w, h, rand, 0.18, 0.04);
+      edgeShading(ctx, w, h, s);
+    },
+
+    metal(ctx, el, w, h, s) {
+      const c = el.color;
+      const rand = seeded(el, 'metal');
+
+      // Metallic gradient base
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, U.shade(c, 0.12));
+      g.addColorStop(0.5, c);
+      g.addColorStop(1, U.shade(c, -0.15));
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      // Fine brushed hairline micro-streaks
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.clip();
+      const lines = Math.min(120, Math.floor(h / Math.max(1, 0.6 * s)));
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i < lines; i++) {
+        const y = rand() * h;
+        const streakAlpha = 0.05 + rand() * 0.09;
+        ctx.strokeStyle = rand() < 0.5 ? `rgba(255,255,255,${streakAlpha})` : `rgba(0,0,0,${streakAlpha})`;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Anisotropic diagonal reflection sheen
+      const sheen = ctx.createLinearGradient(0, 0, w, h * 0.7);
+      sheen.addColorStop(0, 'rgba(255,255,255,0)');
+      sheen.addColorStop(0.42, 'rgba(255,255,255,0.18)');
+      sheen.addColorStop(0.5, 'rgba(255,255,255,0.02)');
+      sheen.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = sheen;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+
+      // Precision engineered chamfer edges
+      edgeShading(ctx, w, h, s);
+    },
+
+    fabric(ctx, el, w, h, s) {
+      const c = el.color;
+      const rand = seeded(el, 'fabric');
+      ctx.fillStyle = c;
+      ctx.fillRect(0, 0, w, h);
+
+      // Woven cross-hatch fabric pattern
+      const pitch = Math.max(2, Math.round(1 * s));
+      const tile = document.createElement('canvas');
+      tile.width = tile.height = pitch * 2;
+      const t = tile.getContext('2d');
+      t.fillStyle = U.rgba(U.shade(c, 0.15), 0.4);
+      t.fillRect(0, 0, pitch, pitch);
+      t.fillRect(pitch, pitch, pitch, pitch);
+      t.fillStyle = U.rgba(U.shade(c, -0.2), 0.35);
+      t.fillRect(pitch, 0, pitch, pitch);
+      t.fillRect(0, pitch, pitch, pitch);
+
+      ctx.fillStyle = ctx.createPattern(tile, 'repeat');
+      ctx.fillRect(0, 0, w, h);
+
+      // Organic linen slub noise
+      noise(ctx, w, h, rand, 0.12, 0.03);
+
+      // Soft fabric light-absorbent edge vignette
+      const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.75);
+      vg.addColorStop(0, 'rgba(0,0,0,0)');
+      vg.addColorStop(1, 'rgba(0,0,0,0.16)');
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, w, h);
+    },
+
+    mirror(ctx, el, w, h, s) {
+      const c = el.color;
+      const bezel = Math.max(2, 1.2 * s);
+
+      // Frame / bevel border
+      ctx.fillStyle = U.shade(c, -0.45);
+      ctx.fillRect(0, 0, w, h);
+
+      const ix = bezel, iy = bezel, iw = w - bezel * 2, ih = h - bezel * 2;
+
+      // Smoked mirror glass
+      const g = ctx.createLinearGradient(0, iy, 0, iy + ih);
+      g.addColorStop(0, U.shade(c, 0.15));
+      g.addColorStop(0.5, c);
+      g.addColorStop(1, U.shade(c, -0.25));
+      ctx.fillStyle = g;
+      ctx.fillRect(ix, iy, iw, ih);
+
+      // High-contrast diagonal reflection bands
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(ix, iy, iw, ih);
+      ctx.clip();
+
+      const sheen1 = ctx.createLinearGradient(ix, iy, ix + iw * 0.8, iy + ih);
+      sheen1.addColorStop(0, 'rgba(255,255,255,0)');
+      sheen1.addColorStop(0.3, 'rgba(255,255,255,0.24)');
+      sheen1.addColorStop(0.38, 'rgba(255,255,255,0.03)');
+      sheen1.addColorStop(0.65, 'rgba(255,255,255,0.12)');
+      sheen1.addColorStop(0.72, 'rgba(255,255,255,0)');
+      sheen1.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = sheen1;
+      ctx.fillRect(ix, iy, iw, ih);
+      ctx.restore();
+
+      // Polished mirror edge highlight
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(ix + 0.5, iy + 0.5, iw - 1, ih - 1);
+    },
   };
 
   function paint(ctx, el, w, h, s, time) {
@@ -4002,7 +4894,7 @@ html, body {
     ctx.fillText(badgeText, bx, by + 1 * k);
 
     // 4. TV Center Alignment Markers & Delta Brackets
-    const tvs = state.elements.filter((e) => e.type === 'tv' || e.label.toLowerCase().includes('tv'));
+    const tvs = state.elements.filter((e) => e.type.startsWith('tv') || e.type === 'screen_ust' || e.label.toLowerCase().includes('tv') || e.label.toLowerCase().includes('screen'));
     for (const tv of tvs) {
       const tvCenterCm = tv.y + tv.height / 2;
       const tvCenterY = T.y(tvCenterCm);
@@ -4266,17 +5158,22 @@ html, body {
   }
 
   function referenceDataUrl(opts = {}) {
-    // Generate clean reference image for AI image-to-image / ControlNet: no annotations, no rulers
+    // Generate clean reference image for AI image-to-image / ControlNet / Gemini Vision
+    const hasMeas = opts.measurements !== undefined ? !!opts.measurements : false;
     const canvas = renderCanvas({
-      widthPx: opts.widthPx || 1536,
-      measurements: false,
-      annotations: false,
-      labels: false,
-      rulers: false,
-      grid: false,
+      widthPx: opts.widthPx || 1600,
+      measurements: hasMeas,
+      annotations: opts.annotations !== undefined ? !!opts.annotations : hasMeas,
+      labels: opts.labels !== undefined ? !!opts.labels : hasMeas,
+      rulers: opts.rulers !== undefined ? !!opts.rulers : hasMeas,
+      grid: opts.grid !== undefined ? !!opts.grid : false,
+      photo: opts.photo !== undefined ? !!opts.photo : true,
+      wall: opts.wall !== undefined ? !!opts.wall : true,
+      floor: opts.floor !== undefined ? !!opts.floor : true,
+      bgType: opts.bgType || 'white',
       background: opts.background || '#ffffff',
     });
-    return canvas.toDataURL('image/png');
+    return canvas.toDataURL(opts.mimeType || 'image/jpeg', opts.quality !== undefined ? opts.quality : 0.92);
   }
 
   async function copyToClipboard(opts = {}) {
@@ -4882,8 +5779,8 @@ html, body {
       }
     }
 
-    // Eye level ideal TV center snap (when el is a TV or eyeLevel guide is visible)
-    if (eyeLevel || el.type === 'tv' || el.label.toLowerCase().includes('tv')) {
+    // Eye level ideal TV center snap (when el is a TV/display or eyeLevel guide is visible)
+    if (eyeLevel || el.type.startsWith('tv') || el.type === 'screen_ust' || el.label.toLowerCase().includes('tv') || el.label.toLowerCase().includes('screen')) {
       const idealTvY = eyeLevelCm - el.height / 2;
       const dEye = Math.abs(proposedY - idealTvY);
       if (dEye < bestDistY) {
@@ -5835,6 +6732,336 @@ html, body {
         ],
       },
     },
+    {
+      id: 'marble-fireplace-suite',
+      label: 'Bookmatched Marble & Hearth Suite',
+      description: 'Full-height bookmatched marble slab, monolithic stone hearth, 200cm panoramic fireplace, 75" OLED TV, and brass sconces.',
+      state: {
+        schemaVersion: 1,
+        name: 'Bookmatched Marble & Hearth Suite',
+        wallWidth: 460,
+        wallHeight: 280,
+        mood: 'darkLuxury',
+        elements: [
+          {
+            id: 'mf_marble_center',
+            type: 'slab_marble',
+            label: 'Bookmatched Calacatta Slab',
+            x: 110,
+            y: 0,
+            width: 240,
+            height: 280,
+            texture: 'marble',
+            color: '#e8e4dc',
+            opacity: 1,
+            ledHalo: true,
+            ledTemp: 3000,
+            ledUnderglow: false,
+            zIndex: 0,
+          },
+          {
+            id: 'mf_hearth',
+            type: 'hearth_stone',
+            label: 'Floating Stone Hearth Bench',
+            x: 70,
+            y: 12,
+            width: 320,
+            height: 25,
+            texture: 'marble',
+            color: '#32302e',
+            opacity: 1,
+            ledHalo: false,
+            ledTemp: 3000,
+            ledUnderglow: true,
+            zIndex: 1,
+          },
+          {
+            id: 'mf_fireplace',
+            type: 'fireplace_wide',
+            label: 'Panoramic Fireplace 200cm',
+            x: 130,
+            y: 44,
+            width: 200,
+            height: 40,
+            texture: 'fireplace',
+            color: '#141414',
+            opacity: 1,
+            ledHalo: false,
+            ledTemp: 3000,
+            ledUnderglow: false,
+            zIndex: 2,
+          },
+          {
+            id: 'mf_tv75',
+            type: 'tv_75',
+            label: 'OLED 75" TV',
+            x: 147,
+            y: 102,
+            width: 167,
+            height: 96,
+            texture: 'glass',
+            color: '#0d0f12',
+            opacity: 1,
+            ledHalo: true,
+            ledTemp: 3000,
+            ledUnderglow: false,
+            zIndex: 3,
+          },
+          {
+            id: 'mf_sconce_l',
+            type: 'sconce_linear',
+            label: 'Brass Linear Sconce L',
+            x: 65,
+            y: 95,
+            width: 5,
+            height: 110,
+            texture: 'metal',
+            color: '#8c7b64',
+            opacity: 1,
+            ledHalo: true,
+            ledTemp: 3000,
+            ledUnderglow: false,
+            zIndex: 4,
+          },
+          {
+            id: 'mf_sconce_r',
+            type: 'sconce_linear',
+            label: 'Brass Linear Sconce R',
+            x: 390,
+            y: 95,
+            width: 5,
+            height: 110,
+            texture: 'metal',
+            color: '#8c7b64',
+            opacity: 1,
+            ledHalo: true,
+            ledTemp: 3000,
+            ledUnderglow: false,
+            zIndex: 5,
+          },
+        ],
+      },
+    },
+    {
+      id: 'home-cinema-ust',
+      label: '100" UST Home Cinema & Acoustic Wall',
+      description: 'Troweled micro-cement backdrop, 100" ALR projector screen, in-wall L/R speakers, fluted tambour credenza, and subwoofer.',
+      state: {
+        schemaVersion: 1,
+        name: '100" UST Home Cinema Wall',
+        wallWidth: 480,
+        wallHeight: 280,
+        mood: 'industrial',
+        elements: [
+          {
+            id: 'hc_concrete_bg',
+            type: 'panel_concrete',
+            label: 'Troweled Micro-Cement Backdrop',
+            x: 70,
+            y: 0,
+            width: 340,
+            height: 280,
+            texture: 'concrete',
+            color: '#6e6a64',
+            opacity: 1,
+            ledHalo: true,
+            ledTemp: 3000,
+            ledUnderglow: false,
+            zIndex: 0,
+          },
+          {
+            id: 'hc_screen',
+            type: 'screen_ust',
+            label: 'UST Projector Screen 100"',
+            x: 130,
+            y: 85,
+            width: 221,
+            height: 124,
+            texture: 'mesh',
+            color: '#1c1f26',
+            opacity: 1,
+            ledHalo: true,
+            ledTemp: 3000,
+            ledUnderglow: false,
+            zIndex: 1,
+          },
+          {
+            id: 'hc_spk_l',
+            type: 'speaker_inwall',
+            label: 'Left In-Wall Speaker',
+            x: 88,
+            y: 122,
+            width: 26,
+            height: 45,
+            texture: 'mesh',
+            color: '#2b2b2d',
+            opacity: 1,
+            ledHalo: false,
+            ledTemp: 3000,
+            ledUnderglow: false,
+            zIndex: 2,
+          },
+          {
+            id: 'hc_spk_r',
+            type: 'speaker_inwall',
+            label: 'Right In-Wall Speaker',
+            x: 366,
+            y: 122,
+            width: 26,
+            height: 45,
+            texture: 'mesh',
+            color: '#2b2b2d',
+            opacity: 1,
+            ledHalo: false,
+            ledTemp: 3000,
+            ledUnderglow: false,
+            zIndex: 3,
+          },
+          {
+            id: 'hc_tambour',
+            type: 'credenza_tambour',
+            label: 'Fluted Tambour Credenza',
+            x: 120,
+            y: 18,
+            width: 240,
+            height: 42,
+            texture: 'fluted',
+            color: '#7a5c43',
+            opacity: 1,
+            ledHalo: false,
+            ledTemp: 3000,
+            ledUnderglow: true,
+            zIndex: 4,
+          },
+          {
+            id: 'hc_sub',
+            type: 'subwoofer',
+            label: 'Floor Subwoofer',
+            x: 375,
+            y: 0,
+            width: 40,
+            height: 44,
+            texture: 'matte',
+            color: '#1c1e22',
+            opacity: 1,
+            ledHalo: false,
+            ledTemp: 3000,
+            ledUnderglow: false,
+            zIndex: 5,
+          },
+        ],
+      },
+    },
+    {
+      id: 'travertine-frame-gallery',
+      label: 'Travertine Gallery & Frame TV',
+      description: 'Roman travertine stone feature slab, monolithic oak plinth bench, 65" Frame TV in Art Mode, floating shelf, and ficus planter.',
+      state: {
+        schemaVersion: 1,
+        name: 'Travertine Gallery Media Wall',
+        wallWidth: 440,
+        wallHeight: 280,
+        mood: 'japandi',
+        elements: [
+          {
+            id: 'tg_travertine',
+            type: 'slab_travertine',
+            label: 'Roman Travertine Feature Wall',
+            x: 60,
+            y: 0,
+            width: 190,
+            height: 280,
+            texture: 'travertine',
+            color: '#d8cca8',
+            opacity: 1,
+            ledHalo: true,
+            ledTemp: 3000,
+            ledUnderglow: false,
+            zIndex: 0,
+          },
+          {
+            id: 'tg_plinth',
+            type: 'bench_plinth',
+            label: 'Monolithic Oak Plinth Bench',
+            x: 50,
+            y: 0,
+            width: 300,
+            height: 35,
+            texture: 'woodgrain',
+            color: '#9a7552',
+            opacity: 1,
+            ledHalo: false,
+            ledTemp: 3000,
+            ledUnderglow: false,
+            zIndex: 1,
+          },
+          {
+            id: 'tg_frame_tv',
+            type: 'tv_frame',
+            label: 'The Frame TV 65" (Art Mode)',
+            x: 82,
+            y: 95,
+            width: 145,
+            height: 83,
+            texture: 'matte',
+            color: '#d9cfbe',
+            opacity: 1,
+            ledHalo: false,
+            ledTemp: 3000,
+            ledUnderglow: false,
+            zIndex: 2,
+          },
+          {
+            id: 'tg_shelf_top',
+            type: 'shelf_float',
+            label: 'Upper Floating Oak Shelf',
+            x: 265,
+            y: 165,
+            width: 110,
+            height: 6,
+            texture: 'woodgrain',
+            color: '#9a7552',
+            opacity: 1,
+            ledHalo: false,
+            ledTemp: 3000,
+            ledUnderglow: true,
+            zIndex: 3,
+          },
+          {
+            id: 'tg_shelf_mid',
+            type: 'shelf_float',
+            label: 'Lower Floating Oak Shelf',
+            x: 265,
+            y: 110,
+            width: 110,
+            height: 6,
+            texture: 'woodgrain',
+            color: '#9a7552',
+            opacity: 1,
+            ledHalo: false,
+            ledTemp: 3000,
+            ledUnderglow: true,
+            zIndex: 4,
+          },
+          {
+            id: 'tg_plant',
+            type: 'prop_plant',
+            label: 'Ceramic Planter & Ficus',
+            x: 365,
+            y: 0,
+            width: 45,
+            height: 160,
+            texture: 'niche',
+            color: '#626c59',
+            opacity: 1,
+            ledHalo: false,
+            ledTemp: 3000,
+            ledUnderglow: false,
+            zIndex: 5,
+          },
+        ],
+      },
+    },
   ];
 
   A.templates = {
@@ -5939,9 +7166,11 @@ html, body {
 
     const w = Math.round(el.width);
     const h = Math.round(el.height);
-    const noun = (V.presets[el.type] && V.presets[el.type].noun) || el.label.toLowerCase();
+    const preset = V.presets[el.type];
+    const noun = (preset && preset.noun) || el.label.toLowerCase();
+    const detailDesc = preset && preset.description ? ` (${preset.description})` : '';
 
-    return `${spatialPrefix} a ${w}cm wide by ${h}cm high ${noun} finished in ${materialPhrase}${ledDesc}.`;
+    return `${spatialPrefix} a ${w}cm wide by ${h}cm high ${noun}: finished in ${materialPhrase}${detailDesc}${ledDesc}.`;
   }
 
   function describeElements(state) {
@@ -5962,53 +7191,84 @@ html, body {
     const modifiers = opts.modifiers || [];
 
     const hasSlats = state.elements.some((e) => e.texture === 'slats');
-    const hasCredenza = state.elements.some((e) => e.type === 'credenza');
-    const hasTv = state.elements.some((e) => e.type === 'tv' || e.texture === 'glass');
-    const hasSoundbar = state.elements.some((e) => e.type === 'soundbar' || e.texture === 'mesh');
-    const hasFireplace = state.elements.some((e) => e.type === 'fireplace');
-    const hasShelves = state.elements.some((e) => e.type === 'bookshelf' || e.texture === 'niche');
-    const hasUpper = state.elements.some((e) => e.type === 'upper');
+    const hasMarble = state.elements.some((e) => e.texture === 'marble');
+    const hasTravertine = state.elements.some((e) => e.texture === 'travertine');
+    const hasConcrete = state.elements.some((e) => e.texture === 'concrete');
+    const hasFluted = state.elements.some((e) => e.texture === 'fluted');
+    const hasMetal = state.elements.some((e) => e.texture === 'metal');
+    const hasFabric = state.elements.some((e) => e.texture === 'fabric');
+    const hasMirror = state.elements.some((e) => e.texture === 'mirror');
+
+    const hasCredenza = state.elements.some((e) => e.type.includes('credenza') || e.type.includes('bench') || e.type === 'upper' || e.type === 'tower_vert');
+    const hasTv = state.elements.some((e) => e.type.startsWith('tv') || e.type.startsWith('screen') || e.texture === 'glass');
+    const hasSoundbar = state.elements.some((e) => e.type === 'soundbar' || e.type === 'speaker_inwall' || e.type === 'subwoofer' || e.type === 'av_bay');
+    const hasFireplace = state.elements.some((e) => e.type.includes('fireplace') || e.type.includes('hearth'));
+    const hasShelves = state.elements.some((e) => e.type.includes('shelf') || e.type.includes('niche') || e.type.includes('shadow') || e.type === 'bookshelf');
+    const hasProps = state.elements.some((e) => e.type.startsWith('prop_') || e.type.includes('sconce') || e.type.includes('light'));
     const hasLeds = state.elements.some((e) => e.ledHalo || e.ledUnderglow);
     const warmLed = state.elements.some((e) => (e.ledHalo || e.ledUnderglow) && e.ledTemp !== 4000);
 
     const craftBulletPoints = [];
+
+    // Feature wall claddings & backdrops
+    if (hasMarble) {
+      const marbleMat = (m.materials && m.materials.marble) || 'monumental bookmatched honed porcelain marble slab';
+      craftBulletPoints.push(`- Bookmatched Stone Feature: Monumental full-height ${marbleMat} with continuous flowing natural veining and crisp mitered edge returns, illuminated by soft perimeter LED halo lighting.`);
+    }
+
+    if (hasTravertine) {
+      const travMat = (m.materials && m.materials.travertine) || 'honed Roman vein-cut travertine stone panels';
+      craftBulletPoints.push(`- Travertine Cladding: Architectural ${travMat} with horizontal sediment stratification, tactile micropores, and refined shadowline brass reveals.`);
+    }
 
     if (hasSlats) {
       const slatMat = (m.materials && m.materials.slats) || 'three-dimensional fluted white oak timber slats';
       craftBulletPoints.push(`- Feature Wall Backdrop: Three-dimensional ${slatMat} with deep tactile shadow reveals backed by matte black acoustic felt. Authentic wood grain with natural timber color variations and realistic depth.`);
     }
 
+    if (hasFluted) {
+      const flutedMat = (m.materials && m.materials.fluted) || 'precision micro-fluted timber paneling';
+      craftBulletPoints.push(`- Micro-Fluted Tambour Detailing: Tight ${flutedMat} offering tactile geometric rhythm with subtle cylindrical shadow-and-highlight lines.`);
+    }
+
+    if (hasConcrete) {
+      const concreteMat = (m.materials && m.materials.concrete) || 'seamless hand-troweled architectural micro-cement';
+      craftBulletPoints.push(`- Textural Cement Finish: Soft ${concreteMat} with delicate mineral clouding and soft industrial light diffusion.`);
+    }
+
     if (hasCredenza) {
       const woodMat = (m.materials && m.materials.woodgrain) || 'warm natural oak veneer';
-      craftBulletPoints.push(`- Floating Low Credenza: Continuous-grain ${woodMat} wrapping seamlessly across the top surface and drawer faces with 45-degree mitered waterfall edges and recessed shadowline finger pulls. Solidly cantilevered above the floor.`);
+      craftBulletPoints.push(`- Bespoke Joinery & Console: Continuous-grain ${woodMat} wrapping seamlessly across top surfaces and drawer fronts with 45-degree mitered waterfall edges and recessed shadowline finger pulls. Solidly cantilevered above the floor.`);
     }
 
     if (hasTv) {
-      craftBulletPoints.push(`- Television: Flush-mounted ultra-slim OLED display with razor-thin bezels, showing deep pitch-black screen depth and subtle, realistic ambient window reflections on the dark glass panel.`);
+      const isFrameTv = state.elements.some((e) => e.type === 'tv_frame');
+      const isUstScreen = state.elements.some((e) => e.type === 'screen_ust');
+      if (isFrameTv) {
+        craftBulletPoints.push(`- Display (Art Mode): Flush lifestyle art television enclosed in a slender beveled timber gallery frame, displaying an ultra-matte non-glare fine art canvas print.`);
+      } else if (isUstScreen) {
+        craftBulletPoints.push(`- Projection Display: 100-inch fixed-frame ultra-short-throw ambient light rejecting (ALR) optical projection screen with an ultra-thin 10mm matte black bezel.`);
+      } else {
+        craftBulletPoints.push(`- Television: Flush-mounted ultra-slim OLED display with razor-thin bezels, showing deep pitch-black screen depth and subtle, realistic ambient window reflections on the dark glass panel.`);
+      }
     }
 
     if (hasSoundbar) {
-      craftBulletPoints.push(`- Audio: Slim architectural soundbar wrapped in tactile acoustic mesh fabric, mounted flush directly below the television.`);
+      craftBulletPoints.push(`- Architectural Audio: Seamless high-fidelity acoustic elements, including flush magnetic in-wall speaker grilles and a slim soundbar wrapped in tactile woven acoustic fabric.`);
     }
 
     if (hasShelves) {
-      const nicheMat = (m.materials && m.materials.niche) || 'limewashed open display niche';
+      const nicheMat = (m.materials && m.materials.niche) || 'limewashed open display niche with solid shelving';
       craftBulletPoints.push(`- Display Shelving / Niches: Deep architectural ${nicheMat}, minimally styled with curated ceramic vessels, art monographs, and sculptural objects with natural ambient occlusion.`);
     }
 
     if (hasFireplace) {
       const fireMat = (m.materials && m.materials.fireplace) || 'frameless linear electric fireplace';
-      craftBulletPoints.push(`- Fireplace: Flush integrated ${fireMat} with warm glowing ember bed and realistic soft flame ribbons.`);
+      craftBulletPoints.push(`- Fireplace & Hearth: Flush integrated ${fireMat} with warm glowing ember bed and realistic soft flame ribbons, complemented by a cantilevered monolithic stone hearth bench.`);
     }
 
-    if (hasUpper) {
-      const upperMat = (m.materials && m.materials.matte) || 'ultra-matte lacquer';
-      craftBulletPoints.push(`- Upper Cabinetry: Minimalist handleless push-to-open upper cupboards finished in ${upperMat} with precise hairline reveals.`);
-    }
-
-    const customEls = state.elements.filter((e) => !['tv', 'soundbar', 'fireplace', 'credenza', 'slats', 'bookshelf', 'upper'].includes(e.type));
-    if (customEls.length) {
-      craftBulletPoints.push(`- Architectural Millwork: Custom built-in cabinetry modules finished with seamless architectural joinery.`);
+    if (hasProps) {
+      craftBulletPoints.push(`- Architectural Styling & Props: Slender linear vertical brass wall sconces emitting soft grazing light, museum-grade picture lighting, framed contemporary abstract artwork, and mature indoor botanical greenery in handcrafted ceramic planters.`);
     }
 
     let lightingBullet = '';
@@ -6164,8 +7424,8 @@ html, body {
       label: 'Google Nano Banana (Gemini)',
       needsKey: true,
       keyOptional: false,
-      defaultModel: 'gemini-3.1-flash-image',
-      models: ['gemini-3.1-flash-image', 'gemini-3.1-flash-lite-image', 'gemini-3-pro-image', 'gemini-2.5-flash-image'],
+      defaultModel: 'gemini-2.5-flash-image',
+      models: ['gemini-2.5-flash-image', 'gemini-3.1-flash-image', 'gemini-3.1-flash-lite-image', 'gemini-3-pro-image'],
       keyUrl: 'https://aistudio.google.com/apikey',
       notes: 'Browser-safe Gemini REST API. High text adherence and architectural accuracy.',
     },
@@ -6270,17 +7530,41 @@ html, body {
       throw new ProviderError('auth', 'Google AI Studio API key required.', 'Get a free API key at aistudio.google.com and enter it in settings.');
     }
 
-    const model = cfg.model || 'gemini-3.1-flash-image';
+    const model = cfg.model || 'gemini-2.5-flash-image';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
     // Map nearest ratio to Gemini's accepted aspect ratios (16:9, 4:3, 1:1, 3:4, 9:16)
     const validRatios = ['16:9', '4:3', '1:1', '3:4', '9:16', '21:9', '3:2'];
     const ar = validRatios.includes(opts.nearestRatio) ? opts.nearestRatio : '16:9';
 
+    const parts = [];
+    if (opts.image) {
+      let mimeType = 'image/jpeg';
+      let data = opts.image;
+      if (opts.image.startsWith('data:')) {
+        const commaIdx = opts.image.indexOf(',');
+        if (commaIdx !== -1) {
+          const prefix = opts.image.substring(0, commaIdx);
+          const mimeMatch = prefix.match(/^data:([^;]+)/);
+          if (mimeMatch) mimeType = mimeMatch[1];
+          data = opts.image.substring(commaIdx + 1);
+        }
+      }
+      data = data.replace(/\s+/g, '');
+      parts.push({
+        inlineData: {
+          mimeType,
+          data,
+        },
+      });
+    }
+
+    parts.push({ text: opts.prompt });
+
     const payload = {
       contents: [
         {
-          parts: [{ text: opts.prompt }],
+          parts,
         },
       ],
       generationConfig: {
@@ -6541,6 +7825,19 @@ html, body {
   let abortController = null;
   let splitPercent = 50;
   let galleryHistory = [];
+  let studioRefOpts = {
+    measurements: false,
+    annotations: false,
+    rulers: false,
+    labels: false,
+    photo: null,
+    wall: true,
+    floor: true,
+    grid: false,
+    bgType: 'white',
+    background: '#ffffff',
+  };
+  let activePreviewMode = 'ref'; // 'ref' | 'render'
 
   function init() {
     createModalDOM();
@@ -6653,14 +7950,17 @@ html, body {
     // Reference Image Export State for AI
     const st = A.store.getState();
     const hasPhotoLoaded = !!(st.wallPhoto && A.photo && A.photo.has(st.wallPhoto.id));
-    let studioIncludePhoto = hasPhotoLoaded && st.wallPhoto.visible;
-    let studioIncludeMeas = false; // clean reference by default for AI
+    if (studioRefOpts.photo === null) {
+      studioRefOpts.photo = hasPhotoLoaded && st.wallPhoto.visible;
+    } else if (!hasPhotoLoaded) {
+      studioRefOpts.photo = false;
+    }
 
     function updateStudioPrompt() {
       const pData = A.prompt.build(A.store.getState(), {
         format: selectedFormat,
         modifiers: Array.from(activeModifiers),
-        photo: studioIncludePhoto,
+        photo: studioRefOpts.photo,
       });
       textarea.value = pData.prompt;
     }
@@ -6686,131 +7986,332 @@ html, body {
           selectedFormat === 'vision' ? '📋 Copy Vision Prompt' : '📋 Copy Prompt'
         )
       ),
-      U.h(
-        'div',
-        {
-          style: {
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '8px',
-            background: 'var(--bg-2)',
-            padding: '8px 12px',
-            borderRadius: 'var(--r-md)',
-            border: '1px solid var(--line)',
-          },
-        },
-        U.h(
+      // Reference Image Configuration Panel
+      (() => {
+        function applyRefPreset(name) {
+          if (name === 'clean') {
+            studioRefOpts.measurements = false;
+            studioRefOpts.annotations = false;
+            studioRefOpts.rulers = false;
+            studioRefOpts.labels = false;
+            studioRefOpts.photo = false;
+            studioRefOpts.wall = true;
+            studioRefOpts.floor = true;
+            studioRefOpts.grid = false;
+            studioRefOpts.bgType = 'white';
+            studioRefOpts.background = '#ffffff';
+          } else if (name === 'cad') {
+            studioRefOpts.measurements = true;
+            studioRefOpts.annotations = true;
+            studioRefOpts.rulers = true;
+            studioRefOpts.labels = true;
+            studioRefOpts.photo = false;
+            studioRefOpts.wall = true;
+            studioRefOpts.floor = true;
+            studioRefOpts.grid = false;
+            studioRefOpts.bgType = 'white';
+            studioRefOpts.background = '#ffffff';
+          } else if (name === 'photo') {
+            studioRefOpts.measurements = false;
+            studioRefOpts.annotations = false;
+            studioRefOpts.rulers = false;
+            studioRefOpts.labels = false;
+            studioRefOpts.photo = true;
+            studioRefOpts.wall = true;
+            studioRefOpts.floor = true;
+            studioRefOpts.grid = false;
+            studioRefOpts.bgType = 'white';
+            studioRefOpts.background = '#ffffff';
+          }
+          updateStudioPrompt();
+          renderBody();
+        }
+
+        return U.h(
           'div',
-          { style: { display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' } },
-          U.h('span', { style: { fontSize: 'var(--fs-xs)', fontWeight: '600', color: 'var(--text-1)' } }, 'Reference Image:'),
-          hasPhotoLoaded
-            ? U.h(
+          {
+            class: 'export-opt-group',
+            style: {
+              background: 'var(--bg-2)',
+              border: '1px solid var(--line)',
+              borderRadius: 'var(--r-md)',
+              padding: '12px',
+              gap: '10px',
+            },
+          },
+          // Header with Title & Presets
+          U.h(
+            'div',
+            { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' } },
+            U.h(
+              'div',
+              { style: { display: 'flex', alignItems: 'center', gap: '6px' } },
+              U.h('span', { style: { fontSize: '15px' } }, '🖼️'),
+              U.h('span', { class: 'studio-section-title', style: { margin: 0 } }, 'Reference Image (Model Input):')
+            ),
+            U.h(
+              'div',
+              { style: { display: 'flex', gap: '4px' } },
+              U.h(
+                'button',
+                {
+                  class: `btn sm ${!studioRefOpts.measurements && !studioRefOpts.photo ? 'secondary' : 'ghost'}`,
+                  title: 'Clean architectural schematic without measurement numbers (Recommended for Gemini/ControlNet)',
+                  onclick: () => applyRefPreset('clean'),
+                },
+                '🖼️ Clean (AI)'
+              ),
+              U.h(
+                'button',
+                {
+                  class: `btn sm ${studioRefOpts.measurements ? 'secondary' : 'ghost'}`,
+                  title: 'Full CAD elevation with dimensions, rulers, and labels',
+                  onclick: () => applyRefPreset('cad'),
+                },
+                '📐 CAD'
+              ),
+              hasPhotoLoaded
+                ? U.h(
+                    'button',
+                    {
+                      class: `btn sm ${studioRefOpts.photo && !studioRefOpts.measurements ? 'secondary' : 'ghost'}`,
+                      title: 'Include the calibrated background photo in reference',
+                      onclick: () => applyRefPreset('photo'),
+                    },
+                    '📸 Room Photo'
+                  )
+                : null
+            )
+          ),
+          // 2-Column Options Grid
+          U.h(
+            'div',
+            { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' } },
+            // Measurements Column
+            U.h(
+              'div',
+              { style: { display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--bg-1)', padding: '10px', borderRadius: 'var(--r-sm)' } },
+              U.h(
                 'label',
-                { class: 'export-check-label', style: { fontSize: 'var(--fs-xs)', color: 'var(--text-0)', cursor: 'pointer' } },
+                { class: 'export-check-label', style: { fontWeight: '600', color: 'var(--text-0)' } },
                 U.h('input', {
                   type: 'checkbox',
-                  checked: studioIncludePhoto,
-                  id: 'chk-studio-photo',
+                  checked: studioRefOpts.measurements,
+                  id: 'chk-ref-meas',
                   onchange: (e) => {
-                    studioIncludePhoto = e.target.checked;
-                    updateStudioPrompt();
-                    A.ui.toast(studioIncludePhoto ? '📷 Background photo included in AI reference' : '📷 Background photo excluded from AI reference', 'info');
+                    studioRefOpts.measurements = e.target.checked;
+                    studioRefOpts.annotations = e.target.checked;
+                    studioRefOpts.rulers = e.target.checked;
+                    studioRefOpts.labels = e.target.checked;
+                    renderBody();
                   },
                 }),
-                '📷 Background Photo'
-              )
-            : U.h(
-                'span',
-                { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)', display: 'inline-flex', alignItems: 'center', gap: '4px' } },
-                '📷 Background Photo:',
-                U.h('span', { style: { color: 'var(--text-3)' } }, 'none loaded ·'),
-                U.h(
-                  'a',
-                  {
-                    href: '#',
-                    style: { color: 'var(--brass-strong)', textDecoration: 'underline', cursor: 'pointer' },
-                    onclick: async (e) => {
-                      e.preventDefault();
-                      if (A.photo && A.photo.pickFile) {
-                        const file = await A.photo.pickFile();
-                        if (file) {
-                          await A.photo.upload(file);
-                          renderBody();
-                        }
-                      }
-                    },
-                  },
-                  'Upload'
-                )
+                '📐 Measurements'
               ),
-          U.h(
-            'label',
-            { class: 'export-check-label', style: { fontSize: 'var(--fs-xs)', color: 'var(--text-0)', cursor: 'pointer' } },
-            U.h('input', {
-              type: 'checkbox',
-              checked: studioIncludeMeas,
-              id: 'chk-studio-meas',
-              onchange: (e) => {
-                studioIncludeMeas = e.target.checked;
-                A.ui.toast(studioIncludeMeas ? '📐 Measurements included in reference' : '📐 Clean reference (measurements excluded)', 'info');
-              },
-            }),
-            '📐 Measurements'
-          )
-        ),
-        U.h(
-          'div',
-          { style: { display: 'flex', gap: '6px', alignItems: 'center' } },
-          U.h(
-            'button',
-            {
-              class: 'btn ghost sm',
-              id: 'btn-copy-ref-image',
-              title: 'Copy reference image to clipboard to paste directly into Gemini (Cmd+V)',
-              onclick: () => {
-                A.exporter.copyToClipboard({
-                  widthPx: 2400,
-                  measurements: studioIncludeMeas,
-                  photo: studioIncludePhoto,
-                  background: '#ffffff',
-                });
-              },
-            },
-            '📋 Copy Image'
+              U.h(
+                'div',
+                { style: { display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '22px' } },
+                U.h(
+                  'label',
+                  { class: 'export-check-label', style: { fontSize: 'var(--fs-xs)', color: studioRefOpts.measurements ? 'var(--text-1)' : 'var(--text-3)' } },
+                  U.h('input', {
+                    type: 'checkbox',
+                    checked: studioRefOpts.annotations,
+                    disabled: !studioRefOpts.measurements,
+                    onchange: (e) => {
+                      studioRefOpts.annotations = e.target.checked;
+                      renderBody();
+                    },
+                  }),
+                  'Dimension Callouts'
+                ),
+                U.h(
+                  'label',
+                  { class: 'export-check-label', style: { fontSize: 'var(--fs-xs)', color: studioRefOpts.measurements ? 'var(--text-1)' : 'var(--text-3)' } },
+                  U.h('input', {
+                    type: 'checkbox',
+                    checked: studioRefOpts.rulers,
+                    disabled: !studioRefOpts.measurements,
+                    onchange: (e) => {
+                      studioRefOpts.rulers = e.target.checked;
+                      renderBody();
+                    },
+                  }),
+                  'Axis Rulers (Top/Left)'
+                ),
+                U.h(
+                  'label',
+                  { class: 'export-check-label', style: { fontSize: 'var(--fs-xs)', color: studioRefOpts.measurements ? 'var(--text-1)' : 'var(--text-3)' } },
+                  U.h('input', {
+                    type: 'checkbox',
+                    checked: studioRefOpts.labels,
+                    disabled: !studioRefOpts.measurements,
+                    onchange: (e) => {
+                      studioRefOpts.labels = e.target.checked;
+                      renderBody();
+                    },
+                  }),
+                  'Element Labels'
+                )
+              )
+            ),
+            // Background & Layers Column
+            U.h(
+              'div',
+              { style: { display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--bg-1)', padding: '10px', borderRadius: 'var(--r-sm)' } },
+              hasPhotoLoaded
+                ? U.h(
+                    'label',
+                    { class: 'export-check-label', style: { fontWeight: '600', color: 'var(--text-0)' } },
+                    U.h('input', {
+                      type: 'checkbox',
+                      checked: studioRefOpts.photo,
+                      id: 'chk-ref-photo',
+                      onchange: (e) => {
+                        studioRefOpts.photo = e.target.checked;
+                        updateStudioPrompt();
+                        renderBody();
+                      },
+                    }),
+                    '📷 Background Photo'
+                  )
+                : U.h(
+                    'div',
+                    { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: '4px' } },
+                    '📷 Photo: none · ',
+                    U.h(
+                      'a',
+                      {
+                        href: '#',
+                        style: { color: 'var(--brass-strong)', textDecoration: 'underline' },
+                        onclick: async (e) => {
+                          e.preventDefault();
+                          if (A.photo && A.photo.pickFile) {
+                            const file = await A.photo.pickFile();
+                            if (file) {
+                              await A.photo.upload(file);
+                              studioRefOpts.photo = true;
+                              updateStudioPrompt();
+                              renderBody();
+                            }
+                          }
+                        },
+                      },
+                      'Upload'
+                    )
+                  ),
+              U.h(
+                'div',
+                { style: { display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: hasPhotoLoaded ? '22px' : '0' } },
+                U.h(
+                  'label',
+                  { class: 'export-check-label', style: { fontSize: 'var(--fs-xs)' } },
+                  U.h('input', {
+                    type: 'checkbox',
+                    checked: studioRefOpts.wall,
+                    onchange: (e) => {
+                      studioRefOpts.wall = e.target.checked;
+                      renderBody();
+                    },
+                  }),
+                  'Wall Surface'
+                ),
+                U.h(
+                  'label',
+                  { class: 'export-check-label', style: { fontSize: 'var(--fs-xs)' } },
+                  U.h('input', {
+                    type: 'checkbox',
+                    checked: studioRefOpts.floor,
+                    onchange: (e) => {
+                      studioRefOpts.floor = e.target.checked;
+                      renderBody();
+                    },
+                  }),
+                  'Floor Baseline (FFL ±0)'
+                ),
+                U.h(
+                  'label',
+                  { class: 'export-check-label', style: { fontSize: 'var(--fs-xs)' } },
+                  U.h('input', {
+                    type: 'checkbox',
+                    checked: studioRefOpts.grid,
+                    onchange: (e) => {
+                      studioRefOpts.grid = e.target.checked;
+                      renderBody();
+                    },
+                  }),
+                  'Grid Lines'
+                ),
+                // Background color choice
+                U.h(
+                  'div',
+                  { style: { display: 'flex', gap: '10px', alignItems: 'center', marginTop: '2px' } },
+                  U.h('span', { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)' } }, 'BG:'),
+                  U.h(
+                    'label',
+                    { class: 'export-check-label', style: { fontSize: 'var(--fs-xs)' } },
+                    U.h('input', {
+                      type: 'radio',
+                      name: 'studio-ref-bg',
+                      checked: studioRefOpts.bgType === 'white',
+                      onchange: () => {
+                        studioRefOpts.bgType = 'white';
+                        studioRefOpts.background = '#ffffff';
+                        renderBody();
+                      },
+                    }),
+                    '⚪ White'
+                  ),
+                  U.h(
+                    'label',
+                    { class: 'export-check-label', style: { fontSize: 'var(--fs-xs)' } },
+                    U.h('input', {
+                      type: 'radio',
+                      name: 'studio-ref-bg',
+                      checked: studioRefOpts.bgType === 'dark',
+                      onchange: () => {
+                        studioRefOpts.bgType = 'dark';
+                        studioRefOpts.background = '#0b0d11';
+                        renderBody();
+                      },
+                    }),
+                    '⬛ Dark'
+                  )
+                )
+              )
+            )
           ),
+          // Action Row: Copy & Download
           U.h(
-            'button',
-            {
-              class: 'btn ghost sm',
-              id: 'btn-download-clean-ref',
-              title: 'Download reference image for Gemini or Midjourney',
-              onclick: () => {
-                A.exporter.downloadPNG({
-                  widthPx: 2400,
-                  measurements: studioIncludeMeas,
-                  photo: studioIncludePhoto,
-                  background: '#ffffff',
-                });
+            'div',
+            { style: { display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '4px', borderTop: '1px solid var(--line)' } },
+            U.h(
+              'button',
+              {
+                class: 'btn ghost sm',
+                id: 'btn-copy-ref-image',
+                title: 'Copy reference image to clipboard to paste directly into Gemini (Cmd+V)',
+                onclick: () => {
+                  A.exporter.copyToClipboard(Object.assign({}, studioRefOpts, { widthPx: 2400 }));
+                },
               },
-            },
-            '⬇️ Download PNG'
-          ),
-          U.h(
-            'button',
-            {
-              class: 'btn ghost sm',
-              id: 'btn-more-export-opts',
-              title: 'Open full Export Elevation dialog with live preview and custom options',
-              onclick: () => {
-                A.exporter.openModal();
+              '📋 Copy Image'
+            ),
+            U.h(
+              'button',
+              {
+                class: 'btn ghost sm',
+                id: 'btn-download-ref-image',
+                title: 'Download reference PNG file',
+                onclick: () => {
+                  A.exporter.downloadPNG(Object.assign({}, studioRefOpts, { widthPx: 2400 }));
+                },
               },
-            },
-            '⚙️ More...'
+              '⬇️ Download Reference PNG'
+            )
           )
-        )
-      )
+        );
+      })()
     );
 
     // 3. Modifier Chips
@@ -6941,18 +8442,115 @@ html, body {
       isGenerating ? '⏳ Generating Render…' : '✨ Generate 3D Render'
     );
 
-    // Result Preview or Status
-    const previewBox = U.h('div', { class: 'render-preview-box', id: 'studio-preview-box' });
-    if (latestRender) {
-      previewBox.appendChild(U.h('img', { src: latestRender.src, class: 'render-preview-img' }));
+    // Preview Box Header: Reference Image vs 3D Render
+    const previewHeader = U.h(
+      'div',
+      { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: '4px' } },
+      U.h(
+        'div',
+        { class: 'studio-tabs', style: { gap: '4px' } },
+        U.h(
+          'button',
+          {
+            class: `btn sm ${activePreviewMode === 'ref' ? 'secondary' : 'ghost'}`,
+            onclick: () => { activePreviewMode = 'ref'; renderBody(); },
+          },
+          '🖼️ Reference (Input)'
+        ),
+        U.h(
+          'button',
+          {
+            class: `btn sm ${activePreviewMode === 'render' ? 'secondary' : 'ghost'}`,
+            disabled: !latestRender,
+            title: latestRender ? 'View generated 3D render' : 'No 3D render generated yet',
+            onclick: () => {
+              if (latestRender) {
+                activePreviewMode = 'render';
+                renderBody();
+              }
+            },
+          },
+          latestRender ? '✨ 3D Render (Output)' : '✨ 3D Render'
+        )
+      ),
+      latestRender
+        ? U.h(
+            'button',
+            {
+              class: 'btn ghost sm',
+              title: 'Open interactive CAD vs 3D split slider comparison',
+              onclick: () => switchTab('compare'),
+            },
+            '↔️ Side-by-Side Compare'
+          )
+        : null
+    );
+
+    // Result Preview or Reference Preview Box
+    const previewBox = U.h('div', { class: 'render-preview-box', id: 'studio-preview-box', style: { flexDirection: 'column', gap: '8px', padding: '12px', minHeight: '320px' } });
+
+    if (activePreviewMode === 'ref') {
+      const prevCanvas = U.h('canvas', {
+        class: 'render-preview-canvas',
+        style: {
+          maxWidth: '100%',
+          maxHeight: '260px',
+          objectFit: 'contain',
+          borderRadius: 'var(--r-md)',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+          background: studioRefOpts.background || '#ffffff',
+        },
+      });
+
+      try {
+        const c = A.exporter.renderCanvas(Object.assign({}, studioRefOpts, { widthPx: 900 }));
+        prevCanvas.width = c.width;
+        prevCanvas.height = c.height;
+        const ctx = prevCanvas.getContext('2d');
+        ctx.drawImage(c, 0, 0);
+
+        const photoLabel = (studioRefOpts.photo && hasPhotoLoaded) ? 'w/ Background Photo' : 'Clean Wall';
+        const measLabel = studioRefOpts.measurements ? 'w/ Measurements' : 'Clean Reference';
+        const bgLabel = studioRefOpts.bgType === 'dark' ? 'Dark BG' : 'White BG';
+        const dimPill = U.h(
+          'div',
+          { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)', textAlign: 'center' } },
+          `Attached to Gemini Multimodal API • 1600 × ${Math.round(1600 / (c.width / c.height))} px • ${photoLabel} • ${measLabel} • ${bgLabel}`
+        );
+        previewBox.appendChild(prevCanvas);
+        previewBox.appendChild(dimPill);
+      } catch (err) {
+        console.error('[Arch2D] failed to draw reference preview:', err);
+        previewBox.appendChild(U.h('div', { style: { color: 'var(--text-3)' } }, 'Failed to generate preview'));
+      }
     } else {
-      previewBox.appendChild(U.h('div', { style: { color: 'var(--text-3)', fontSize: 'var(--fs-sm)' } }, 'Rendered AI images will appear here'));
+      if (latestRender) {
+        previewBox.appendChild(U.h('img', { src: latestRender.src, class: 'render-preview-img', style: { maxHeight: '270px' } }));
+        previewBox.appendChild(
+          U.h(
+            'div',
+            { style: { display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '6px' } },
+            U.h('button', { class: 'btn secondary sm', onclick: () => switchTab('compare') }, '↔️ Open Split Compare'),
+            U.h('button', {
+              class: 'btn ghost sm',
+              onclick: () => {
+                if (latestRender.kind === 'dataurl' || latestRender.kind === 'objecturl') {
+                  U.downloadDataUrl(latestRender.src, `arch2d-render-${Date.now()}.png`);
+                }
+              },
+            }, '⬇️ Download Render')
+          )
+        );
+      } else {
+        previewBox.appendChild(U.h('div', { style: { color: 'var(--text-3)', fontSize: 'var(--fs-sm)' } }, 'Rendered AI images will appear here'));
+      }
     }
 
     rightCol.appendChild(providerTitle);
     rightCol.appendChild(providerCards);
     rightCol.appendChild(configBox);
     rightCol.appendChild(generateBtn);
+    rightCol.appendChild(previewHeader);
     rightCol.appendChild(previewBox);
 
     container.appendChild(leftCol);
@@ -6982,12 +8580,28 @@ html, body {
     renderBody();
 
     const activeProvider = A.providers.getActive();
-    const promptData = A.prompt.build(A.store.getState());
+    const promptData = A.prompt.build(A.store.getState(), {
+      format: selectedFormat,
+      modifiers: Array.from(activeModifiers),
+      photo: studioRefOpts.photo,
+    });
+
+    let refImage = null;
+    try {
+      if (A.exporter && A.exporter.referenceDataUrl) {
+        refImage = A.exporter.referenceDataUrl(Object.assign({}, studioRefOpts, {
+          widthPx: 1600,
+        }));
+      }
+    } catch (e) {
+      console.warn('[Arch2D Studio] failed to export reference data url:', e);
+    }
 
     try {
       A.ui.toast(`Requesting render from ${activeProvider}…`, 'info');
       const result = await A.providers.generate(activeProvider, {
         prompt: promptText,
+        image: refImage,
         nearestRatio: promptData.nearestRatio,
         ratio: promptData.ratio,
         signal: abortController.signal,
@@ -6995,6 +8609,7 @@ html, body {
 
       latestRender = result;
       saveToGallery(result);
+      activePreviewMode = 'render';
       A.ui.toast('Render generated successfully!', 'success');
       activeTab = 'compare'; // Jump directly to comparison
     } catch (err) {
@@ -7010,7 +8625,18 @@ html, body {
 
   /* ---------- Compare Tab (Split Slider & Downloads) ---------- */
   function renderCompareTab(container) {
-    const leftCol = U.h('div', { class: 'studio-col-left', style: { flex: '1.4' } });
+    const leftCol = U.h('div', {
+      class: 'studio-col-left',
+      style: {
+        flex: '1.4',
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      },
+    });
     const rightCol = U.h('div', { class: 'studio-col-right', style: { flex: '0.6' } });
 
     if (!latestRender) {
@@ -7028,50 +8654,79 @@ html, body {
       return;
     }
 
-    // Interactive Split Slider Viewer
+    // Interactive Split Slider Viewer Container
+    const viewerWrap = U.h('div', { class: 'split-viewer-wrap' });
     const viewer = U.h('div', { class: 'split-viewer', id: 'split-viewer' });
 
-    // CAD canvas render
-    const cadCanvas = A.exporter.renderCanvas({ widthPx: 1400, annotations: true, rulers: true, grid: true });
+    // CAD canvas render matching reference options
+    const cadCanvas = A.exporter.renderCanvas(Object.assign({}, studioRefOpts, {
+      widthPx: 1600,
+    }));
     cadCanvas.className = 'split-img-cad';
 
     // 3D Render Image
     const renderImg = U.h('img', { src: latestRender.src, class: 'split-img-render' });
+    renderImg.style.clipPath = `inset(0 calc(100% - ${splitPercent}%) 0 0)`;
 
-    // Overlay containing the render, clipped by splitPercent
-    const overlay = U.h('div', { class: 'split-overlay', style: { width: `${splitPercent}%` } });
-    overlay.appendChild(renderImg);
+    // Sync Aspect Ratio to prevent image cut-off on sides
+    function syncViewerAspect() {
+      let ar = 16 / 9;
+      if (renderImg.naturalWidth && renderImg.naturalHeight) {
+        ar = renderImg.naturalWidth / renderImg.naturalHeight;
+      } else if (cadCanvas.width && cadCanvas.height) {
+        ar = cadCanvas.width / cadCanvas.height;
+      }
+      viewer.style.aspectRatio = String(ar);
+    }
+    if (renderImg.complete && renderImg.naturalWidth) {
+      syncViewerAspect();
+    } else {
+      renderImg.addEventListener('load', syncViewerAspect);
+    }
 
     // Drag Handle
     const handle = U.h('div', { class: 'split-handle', style: { left: `${splitPercent}%` } });
 
+    // Labels / Badges
+    const badgeRender = U.h('div', { class: 'split-badge left' }, '✨ 3D Render');
+    const badgeCad = U.h('div', { class: 'split-badge right' }, '📐 Reference CAD');
+
     viewer.appendChild(cadCanvas);
-    viewer.appendChild(overlay);
+    viewer.appendChild(renderImg);
     viewer.appendChild(handle);
+    viewer.appendChild(badgeRender);
+    viewer.appendChild(badgeCad);
+    viewerWrap.appendChild(viewer);
 
     // Mouse / touch drag for split slider
     let isDraggingSplit = false;
     const updateSplit = (clientX) => {
       const rect = viewer.getBoundingClientRect();
-      const p = U.clamp(((clientX - rect.left) / rect.width) * 100, 2, 98);
+      if (rect.width <= 0) return;
+      const p = U.clamp(((clientX - rect.left) / rect.width) * 100, 0, 100);
       splitPercent = p;
-      overlay.style.width = `${p}%`;
+      renderImg.style.clipPath = `inset(0 calc(100% - ${p}%) 0 0)`;
       handle.style.left = `${p}%`;
     };
 
     viewer.addEventListener('pointerdown', (e) => {
       isDraggingSplit = true;
-      viewer.setPointerCapture(e.pointerId);
+      try { viewer.setPointerCapture(e.pointerId); } catch (_) {}
       updateSplit(e.clientX);
     });
     viewer.addEventListener('pointermove', (e) => {
       if (isDraggingSplit) updateSplit(e.clientX);
     });
-    viewer.addEventListener('pointerup', () => {
-      isDraggingSplit = false;
-    });
+    const onPointerEnd = (e) => {
+      if (isDraggingSplit) {
+        try { viewer.releasePointerCapture(e.pointerId); } catch (_) {}
+        isDraggingSplit = false;
+      }
+    };
+    viewer.addEventListener('pointerup', onPointerEnd);
+    viewer.addEventListener('pointercancel', onPointerEnd);
 
-    leftCol.appendChild(viewer);
+    leftCol.appendChild(viewerWrap);
 
     // Right Column: Download Actions & History
     rightCol.appendChild(U.h('div', { class: 'studio-section-title' }, 'Export & Downloads:'));
@@ -7159,6 +8814,11 @@ html, body {
 
   /* ---------- Public API ---------- */
   function open() {
+    const st = A.store.getState();
+    const hasPhotoLoaded = !!(st.wallPhoto && A.photo && A.photo.has(st.wallPhoto.id));
+    if (studioRefOpts.photo === null) {
+      studioRefOpts.photo = hasPhotoLoaded && st.wallPhoto.visible;
+    }
     modalBackdrop.classList.add('open');
     renderBody();
   }
@@ -7179,11 +8839,46 @@ html, body {
     });
   }
 
+  async function testGenerate(apiKey = null, customPrompt = null) {
+    const st = A.store.getState();
+    if (apiKey) {
+      A.providers.setConfig('google', { apiKey });
+    }
+    const promptData = A.prompt.build(st, {
+      format: selectedFormat || 'vision',
+      modifiers: Array.from(activeModifiers),
+      photo: studioRefOpts.photo,
+    });
+    const promptText = customPrompt || promptData.prompt;
+    const refImage = A.exporter.referenceDataUrl(Object.assign({}, studioRefOpts, {
+      widthPx: 1600,
+    }));
+
+    console.log('[Arch2D testGenerate] Reference image ready (' + Math.round(refImage.length / 1024) + ' KB base64)');
+    console.log('[Arch2D testGenerate] Calling Gemini API directly...');
+
+    const result = await A.providers.generate('google', {
+      prompt: promptText,
+      image: refImage,
+      nearestRatio: promptData.nearestRatio,
+      ratio: promptData.ratio,
+    });
+
+    console.log('[Arch2D testGenerate] Render generated successfully:', result);
+    latestRender = result;
+    saveToGallery(result);
+    activeTab = 'compare';
+    open();
+    return result;
+  }
+
   A.studio = {
     init,
     open,
     close,
+    testGenerate,
   };
+  A.testGenerate = testGenerate;
 })();
 </script>
 <script>
@@ -7196,6 +8891,8 @@ html, body {
   const V = A.vocab;
 
   let leftSidebar, rightSidebar, stageToolbar;
+  let activePresetCat = 'all';
+  let presetFilterText = '';
 
   function init() {
     leftSidebar = document.getElementById('sidebar-left');
@@ -7609,25 +9306,80 @@ html, body {
 
     // 4. Quick Add Presets Library
     const secPresets = U.h('div', { class: 'sidebar-section' });
-    secPresets.appendChild(U.h('div', { class: 'section-heading' }, 'Quick Add Presets'));
+    secPresets.appendChild(U.h('div', { class: 'section-heading' }, 'Architectural Presets Library'));
 
-    const presetsGrid = U.h('div', { class: 'presets-grid' });
-    for (const [key, p] of Object.entries(V.presets)) {
-      if (key === 'custom') continue;
-      const btn = U.h(
+    // Search Box
+    const searchBox = U.h('div', { class: 'preset-search-box' });
+    const searchInput = U.h('input', {
+      type: 'text',
+      class: 'preset-search-input',
+      placeholder: 'Search 30+ objects...',
+      value: presetFilterText,
+      oninput: (e) => {
+        presetFilterText = e.target.value.toLowerCase().trim();
+        refreshPresetsGrid();
+      },
+    });
+    searchBox.appendChild(searchInput);
+    secPresets.appendChild(searchBox);
+
+    // Category Tabs
+    const catTabs = U.h('div', { class: 'preset-category-tabs' });
+    const categories = V.categories || { all: { label: 'All' } };
+    for (const [catKey, catObj] of Object.entries(categories)) {
+      const tabBtn = U.h(
         'button',
         {
-          class: 'preset-item-btn',
+          class: `preset-cat-tab ${activePresetCat === catKey ? 'active' : ''}`,
           onclick: () => {
-            A.store.addPreset(key);
-            if (window.innerWidth <= 900) rightSidebar.classList.add('open');
+            activePresetCat = catKey;
+            catTabs.querySelectorAll('.preset-cat-tab').forEach((b) => b.classList.remove('active'));
+            tabBtn.classList.add('active');
+            refreshPresetsGrid();
           },
         },
-        U.h('span', null, p.label),
-        U.h('span', { class: 'preset-dims' }, `${p.width}×${p.height}`)
+        catObj.label
       );
-      presetsGrid.appendChild(btn);
+      catTabs.appendChild(tabBtn);
     }
+    secPresets.appendChild(catTabs);
+
+    const presetsGrid = U.h('div', { class: 'presets-grid' });
+    function refreshPresetsGrid() {
+      presetsGrid.innerHTML = '';
+      let matchCount = 0;
+      for (const [key, p] of Object.entries(V.presets)) {
+        if (key === 'custom') continue;
+        const matchesCat = activePresetCat === 'all' || p.category === activePresetCat;
+        const matchesQuery = !presetFilterText || p.label.toLowerCase().includes(presetFilterText) || (p.noun && p.noun.toLowerCase().includes(presetFilterText));
+        if (!matchesCat || !matchesQuery) continue;
+        matchCount++;
+
+        const btn = U.h(
+          'button',
+          {
+            class: 'preset-item-btn',
+            title: p.description || p.label,
+            onclick: () => {
+              A.store.addPreset(key);
+              if (window.innerWidth <= 900) rightSidebar.classList.add('open');
+            },
+          },
+          U.h('div', { class: 'preset-label-wrap' },
+            U.h('span', { class: 'preset-swatch-dot', style: { background: p.color } }),
+            U.h('span', null, p.label)
+          ),
+          U.h('span', { class: 'preset-dims' }, `${p.width}×${p.height}`)
+        );
+        presetsGrid.appendChild(btn);
+      }
+      if (matchCount === 0) {
+        presetsGrid.appendChild(
+          U.h('div', { style: { padding: '14px 8px', fontSize: 'var(--fs-xs)', color: 'var(--text-2)', textAlign: 'center' } }, 'No matching objects found.')
+        );
+      }
+    }
+    refreshPresetsGrid();
     secPresets.appendChild(presetsGrid);
 
     // Custom Block button
@@ -7743,9 +9495,9 @@ html, body {
     secDims.appendChild(rowDim);
     secDims.appendChild(rowPos);
 
-    // Ergonomic TV Center Alignment Card (if selected element is a TV)
+    // Ergonomic TV Center Alignment Card (if selected element is a TV or display)
     let secTvErgo = null;
-    if (el.type === 'tv' || el.label.toLowerCase().includes('tv')) {
+    if (el.type.startsWith('tv') || el.type === 'screen_ust' || el.label.toLowerCase().includes('tv') || el.label.toLowerCase().includes('screen')) {
       secTvErgo = U.h('div', {
         class: 'sidebar-section',
         style: {
@@ -7896,6 +9648,28 @@ html, body {
       'Under-Cabinet Downward Glow'
     );
     secLed.appendChild(chkUnderglow);
+
+    // AI Prompt Representation Card
+    const secAiPrompt = U.h('div', {
+      class: 'sidebar-section',
+      style: {
+        background: 'rgba(56, 189, 248, 0.05)',
+        padding: '10px 12px',
+        borderRadius: 'var(--r-md)',
+        border: '1px solid rgba(56, 189, 248, 0.22)',
+      },
+    });
+    secAiPrompt.appendChild(U.h('div', { class: 'section-heading', style: { color: 'var(--cyan)', marginBottom: '4px' } }, '✨ AI Prompt Representation'));
+    const pPreset = V.presets[el.type];
+    const pMood = V.moods[A.store.getState().mood];
+    const pTexDesc = (pMood && pMood.materials && pMood.materials[el.texture]) || (V.textures[el.texture] && V.textures[el.texture].phrase) || 'architectural finish';
+    const pObjDesc = (pPreset && pPreset.description) || `${el.label} custom component.`;
+    secAiPrompt.appendChild(
+      U.h('div', { style: { fontSize: '11px', color: 'var(--text-1)', lineHeight: '1.45', fontStyle: 'italic' } },
+        `"${pObjDesc} Finished in ${pTexDesc}."`
+      )
+    );
+    rightSidebar.appendChild(secAiPrompt);
 
     // Layer & Actions
     const secActions = U.h('div', { class: 'sidebar-section' });
