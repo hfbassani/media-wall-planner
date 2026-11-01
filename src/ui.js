@@ -8,6 +8,8 @@
   let leftSidebar, rightSidebar, stageToolbar;
   let activePresetCat = 'all';
   let presetFilterText = '';
+  let activeInspectorZone = 'primary';
+  let activePaletteFam = null;
 
   function init() {
     leftSidebar = document.getElementById('sidebar-left');
@@ -658,17 +660,170 @@
       secTvErgo.appendChild(btnAlign);
     }
 
-    // Materials / Textures Picker
+    // Archetype & Multi-part definitions
+    const preset = V.presets[el.type] || {};
+    const arche = (V.archetypes && V.archetypes[preset.archetype || 'plain']) || { zones: {}, controls: [] };
+    const hasSecondary = !!(arche.zones && arche.zones.secondary);
+    if (!hasSecondary) activeInspectorZone = 'primary';
+
+    // Component Structure & Parametric Geometry
+    let secStructure = null;
+    const controls = arche.controls || [];
+    if (controls.length > 0) {
+      secStructure = U.h('div', { class: 'sidebar-section' });
+      secStructure.appendChild(U.h('div', { class: 'section-heading' }, 'Component Structure & Geometry'));
+
+      const setParam = (key, val) => {
+        const params = Object.assign({}, el.params, { [key]: val });
+        mutateEl(el.id, { params });
+        A.canvas.requestRedraw();
+      };
+      const p = el.params || {};
+
+      const numFields = [];
+      if (controls.includes('shelves')) numFields.push(makeNumField('Shelves (Rows)', p.shelves || 0, (v) => setParam('shelves', Math.max(0, Math.min(8, Math.round(v))))));
+      if (controls.includes('bays')) numFields.push(makeNumField('Door Bays / Cols (0=auto)', p.bays || 0, (v) => setParam('bays', Math.max(0, Math.min(6, Math.round(v))))));
+      if (controls.includes('drawers')) numFields.push(makeNumField('Drawer Rows', p.drawers || 0, (v) => setParam('drawers', Math.max(0, Math.min(4, Math.round(v))))));
+      if (controls.includes('topSlabCm')) numFields.push(makeNumField('Top Slab (cm)', p.topSlabCm || 0, (v) => setParam('topSlabCm', Math.max(0, Math.min(15, v)))));
+      if (controls.includes('plinthHeightCm')) numFields.push(makeNumField('Plinth / Legs (cm)', p.plinthHeightCm || 0, (v) => setParam('plinthHeightCm', Math.max(0, Math.min(20, v)))));
+      if (controls.includes('frameWidthCm')) numFields.push(makeNumField('Frame Thickness (cm)', p.frameWidthCm !== undefined ? p.frameWidthCm : 3, (v) => setParam('frameWidthCm', Math.max(0, Math.min(12, v)))));
+
+      for (let i = 0; i < numFields.length; i += 2) {
+        const row = U.h('div', { class: 'form-row' });
+        row.appendChild(numFields[i]);
+        if (numFields[i + 1]) row.appendChild(numFields[i + 1]);
+        secStructure.appendChild(row);
+      }
+
+      if (controls.includes('handleStyle')) {
+        const rowHandle = U.h('div', { class: 'form-field', style: { marginTop: '4px' } });
+        rowHandle.appendChild(U.h('label', { class: 'form-label' }, 'Handle Style'));
+        const handleSelect = U.h(
+          'select',
+          {
+            class: 'select',
+            onchange: (e) => setParam('handleStyle', e.target.value),
+          },
+          U.h('option', { value: 'none', selected: p.handleStyle === 'none' }, 'Push-Latch (Handleless)'),
+          U.h('option', { value: 'groove', selected: p.handleStyle === 'groove' || !p.handleStyle }, 'Shadowline Finger Groove'),
+          U.h('option', { value: 'bar_brass', selected: p.handleStyle === 'bar_brass' }, 'Brushed Brass Bar Handle'),
+          U.h('option', { value: 'bar_black', selected: p.handleStyle === 'bar_black' }, 'Matte Black Bar Handle'),
+          U.h('option', { value: 'knob', selected: p.handleStyle === 'knob' }, 'Minimalist Knob Pull')
+        );
+        rowHandle.appendChild(handleSelect);
+        secStructure.appendChild(rowHandle);
+      }
+
+      if (controls.includes('slatPitch')) {
+        const rowPitch = U.h('div', { class: 'form-field', style: { marginTop: '4px' } });
+        rowPitch.appendChild(U.h('label', { class: 'form-label' }, 'Slat Pitch / Width'));
+        const pitchSelect = U.h(
+          'select',
+          {
+            class: 'select',
+            onchange: (e) => setParam('slatPitch', e.target.value),
+          },
+          U.h('option', { value: 'fine', selected: p.slatPitch === 'fine' }, 'Fine Micro-Slats (2cm)'),
+          U.h('option', { value: 'standard', selected: p.slatPitch === 'standard' || !p.slatPitch }, 'Standard Slats (4cm)'),
+          U.h('option', { value: 'wide', selected: p.slatPitch === 'wide' }, 'Wide Slat Planks (8cm)')
+        );
+        rowPitch.appendChild(pitchSelect);
+        secStructure.appendChild(rowPitch);
+      }
+
+      if (controls.includes('archTop')) {
+        const chkArch = U.h(
+          'label',
+          { style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--fs-xs)', cursor: 'pointer', marginTop: '6px' } },
+          U.h('input', {
+            type: 'checkbox',
+            checked: !!p.archTop,
+            onchange: (e) => setParam('archTop', e.target.checked),
+          }),
+          'Architectural Arched Top'
+        );
+        secStructure.appendChild(chkArch);
+      }
+
+      if (controls.includes('showProps')) {
+        const chkProps = U.h(
+          'label',
+          { style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--fs-xs)', cursor: 'pointer', marginTop: '6px' } },
+          U.h('input', {
+            type: 'checkbox',
+            checked: p.showProps !== false,
+            onchange: (e) => setParam('showProps', e.target.checked),
+          }),
+          'Styled Interior Decor (Books, Ceramics)'
+        );
+        secStructure.appendChild(chkProps);
+      }
+    }
+
+    // Materials / Textures / Swatches Picker
     const secMat = U.h('div', { class: 'sidebar-section' });
-    secMat.appendChild(U.h('div', { class: 'section-heading' }, 'Material Texture'));
+    secMat.appendChild(U.h('div', { class: 'section-heading' }, 'Materials & Finishes'));
+
+    if (hasSecondary) {
+      const zoneTabs = U.h('div', { class: 'mat-zone-tabs' });
+      const tabPrim = U.h(
+        'button',
+        {
+          class: `mat-zone-tab ${activeInspectorZone === 'primary' ? 'active' : ''}`,
+          onclick: () => {
+            activeInspectorZone = 'primary';
+            renderInspector();
+          },
+        },
+        `Primary: ${arche.zones.primary || 'Body'}`
+      );
+      const tabSec = U.h(
+        'button',
+        {
+          class: `mat-zone-tab ${activeInspectorZone === 'secondary' ? 'active' : ''}`,
+          onclick: () => {
+            activeInspectorZone = 'secondary';
+            renderInspector();
+          },
+        },
+        `Secondary: ${arche.zones.secondary || 'Trim'}`
+      );
+      zoneTabs.appendChild(tabPrim);
+      zoneTabs.appendChild(tabSec);
+      secMat.appendChild(zoneTabs);
+    }
+
+    const isSecondary = hasSecondary && activeInspectorZone === 'secondary';
+    const curTex = isSecondary ? (el.secondaryTexture || el.texture) : el.texture;
+    const curColor = isSecondary ? (el.secondaryColor || '#b08d66') : el.color;
+    const curColorId = isSecondary ? el.secondaryColorId : el.colorId;
+
+    secMat.appendChild(U.h('div', { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)', marginBottom: '6px', fontWeight: '500' } },
+      `Texture Surface (${isSecondary ? arche.zones.secondary : (arche.zones.primary || 'Main')})`
+    ));
+
     const texGrid = U.h('div', { class: 'texture-picker-grid' });
     for (const [tId, tObj] of Object.entries(V.textures)) {
-      const isAct = el.texture === tId;
+      const isAct = curTex === tId;
       const tile = U.h(
         'button',
         {
           class: `texture-tile ${isAct ? 'active' : ''}`,
-          onclick: () => mutateEl(el.id, { texture: tId, color: isAct ? el.color : tObj.defaultColor }),
+          onclick: () => {
+            if (isSecondary) {
+              mutateEl(el.id, {
+                secondaryTexture: tId,
+                secondaryColor: isAct ? curColor : tObj.defaultColor,
+                secondaryColorId: null,
+              });
+            } else {
+              mutateEl(el.id, {
+                texture: tId,
+                color: isAct ? curColor : tObj.defaultColor,
+                colorId: null,
+              });
+            }
+          },
         },
         tObj.label
       );
@@ -676,27 +831,99 @@
     }
     secMat.appendChild(texGrid);
 
-    // Color & Opacity
-    const rowColor = U.h('div', { class: 'form-row', style: { alignItems: 'center', marginTop: '6px' } });
-    rowColor.appendChild(
-      U.h(
-        'div',
-        { class: 'form-field' },
-        U.h('label', { class: 'form-label' }, 'Base Color'),
-        U.h('input', {
-          type: 'color',
-          class: 'input',
-          style: { height: '36px', padding: '2px', cursor: 'pointer' },
-          value: el.color,
-          oninput: (e) => mutateEl(el.id, { color: e.target.value }),
-        })
-      )
+    // Curated Swatch Palette Section
+    secMat.appendChild(U.h('div', { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)', marginTop: '12px', marginBottom: '6px', fontWeight: '500' } },
+      'Curated Architectural Finishes'
+    ));
+
+    const curSwatch = curColorId && V.swatchIndex && V.swatchIndex[curColorId];
+    const swatchLabel = curSwatch ? curSwatch.label : `Custom Tint (${curColor.toUpperCase()})`;
+    const activeLabelDiv = U.h('div', { class: 'swatch-active-label' },
+      U.h('span', { class: 'swatch-active-dot', style: { background: curColor } }),
+      U.h('span', null, swatchLabel)
     );
-    rowColor.appendChild(
-      U.h(
-        'div',
-        { class: 'form-field' },
-        U.h('label', { class: 'form-label' }, `Opacity (${Math.round(el.opacity * 100)}%)`),
+    secMat.appendChild(activeLabelDiv);
+
+    const famTabs = U.h('div', { class: 'palette-family-tabs' });
+    const effectiveFam = activePaletteFam || (V.textureFamily && V.textureFamily[curTex]) || 'woods';
+
+    const palettes = V.palettes || {};
+    for (const [fKey, fObj] of Object.entries(palettes)) {
+      const tab = U.h(
+        'button',
+        {
+          class: `palette-fam-tab ${effectiveFam === fKey ? 'active' : ''}`,
+          onclick: () => {
+            activePaletteFam = fKey;
+            renderInspector();
+          },
+        },
+        fObj.label
+      );
+      famTabs.appendChild(tab);
+    }
+    const tabCustom = U.h(
+      'button',
+      {
+        class: `palette-fam-tab ${effectiveFam === 'custom' ? 'active' : ''}`,
+        onclick: () => {
+          activePaletteFam = 'custom';
+          renderInspector();
+        },
+      },
+      '🎨 Custom Hex'
+    );
+    famTabs.appendChild(tabCustom);
+    secMat.appendChild(famTabs);
+
+    if (effectiveFam !== 'custom' && palettes[effectiveFam]) {
+      const swatchGrid = U.h('div', { class: 'swatch-grid' });
+      for (const sw of palettes[effectiveFam].swatches) {
+        const isSwAct = curColorId === sw.id || curColor.toLowerCase() === sw.hex.toLowerCase();
+        const chip = U.h('button', {
+          class: `swatch-chip ${isSwAct ? 'active' : ''}`,
+          style: { background: sw.hex },
+          title: `${sw.label} (${sw.phrase})`,
+          onclick: () => {
+            if (isSecondary) {
+              mutateEl(el.id, { secondaryColor: sw.hex, secondaryColorId: sw.id });
+            } else {
+              mutateEl(el.id, { color: sw.hex, colorId: sw.id });
+            }
+          },
+        });
+        swatchGrid.appendChild(chip);
+      }
+      secMat.appendChild(swatchGrid);
+    } else {
+      const rowColor = U.h('div', { class: 'form-row', style: { alignItems: 'center', marginTop: '6px' } });
+      rowColor.appendChild(
+        U.h(
+          'div',
+          { class: 'form-field' },
+          U.h('label', { class: 'form-label' }, 'Custom Color (Hex)'),
+          U.h('input', {
+            type: 'color',
+            class: 'input',
+            style: { height: '36px', padding: '2px', cursor: 'pointer' },
+            value: curColor,
+            oninput: (e) => {
+              if (isSecondary) {
+                mutateEl(el.id, { secondaryColor: e.target.value, secondaryColorId: null });
+              } else {
+                mutateEl(el.id, { color: e.target.value, colorId: null });
+              }
+            },
+          })
+        )
+      );
+      secMat.appendChild(rowColor);
+    }
+
+    if (!isSecondary) {
+      const rowOp = U.h('div', { class: 'form-field', style: { marginTop: '8px' } });
+      rowOp.appendChild(U.h('label', { class: 'form-label' }, `Layer Opacity (${Math.round(el.opacity * 100)}%)`));
+      rowOp.appendChild(
         U.h('input', {
           type: 'range',
           min: '0.1',
@@ -705,9 +932,9 @@
           value: el.opacity,
           oninput: (e) => mutateEl(el.id, { opacity: parseFloat(e.target.value) }),
         })
-      )
-    );
-    secMat.appendChild(rowColor);
+      );
+      secMat.appendChild(rowOp);
+    }
 
     // LED Lighting Modifiers
     const secLed = U.h('div', { class: 'sidebar-section' });
@@ -775,16 +1002,12 @@
       },
     });
     secAiPrompt.appendChild(U.h('div', { class: 'section-heading', style: { color: 'var(--cyan)', marginBottom: '4px' } }, '✨ AI Prompt Representation'));
-    const pPreset = V.presets[el.type];
-    const pMood = V.moods[A.store.getState().mood];
-    const pTexDesc = (pMood && pMood.materials && pMood.materials[el.texture]) || (V.textures[el.texture] && V.textures[el.texture].phrase) || 'architectural finish';
-    const pObjDesc = (pPreset && pPreset.description) || `${el.label} custom component.`;
+    const promptSentence = A.prompt && A.prompt.describeElement ? A.prompt.describeElement(el, A.store.getState()) : `${el.label} custom component.`;
     secAiPrompt.appendChild(
       U.h('div', { style: { fontSize: '11px', color: 'var(--text-1)', lineHeight: '1.45', fontStyle: 'italic' } },
-        `"${pObjDesc} Finished in ${pTexDesc}."`
+        `"${promptSentence}"`
       )
     );
-    rightSidebar.appendChild(secAiPrompt);
 
     // Layer & Actions
     const secActions = U.h('div', { class: 'sidebar-section' });
@@ -843,8 +1066,10 @@
     rightSidebar.appendChild(secHeader);
     rightSidebar.appendChild(secDims);
     if (secTvErgo) rightSidebar.appendChild(secTvErgo);
+    if (secStructure) rightSidebar.appendChild(secStructure);
     rightSidebar.appendChild(secMat);
     rightSidebar.appendChild(secLed);
+    rightSidebar.appendChild(secAiPrompt);
     rightSidebar.appendChild(secActions);
   }
 

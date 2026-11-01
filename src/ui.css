@@ -375,6 +375,113 @@ html, body {
   font-weight: 600;
 }
 
+/* Multi-Part Material Zone Tabs */
+.mat-zone-tabs {
+  display: flex;
+  background: var(--bg-1);
+  padding: 3px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  margin-bottom: 10px;
+  gap: 3px;
+}
+.mat-zone-tab {
+  flex: 1;
+  text-align: center;
+  padding: 6px 6px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--text-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+.mat-zone-tab:hover {
+  color: var(--text-0);
+}
+.mat-zone-tab.active {
+  background: var(--bg-3);
+  color: var(--brass-strong);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Curated Swatch Palette Picker */
+.palette-family-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  margin-bottom: 8px;
+  padding-bottom: 2px;
+}
+.palette-family-tabs::-webkit-scrollbar {
+  height: 3px;
+}
+.palette-fam-tab {
+  padding: 3px 6px;
+  font-size: 10.5px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  color: var(--text-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--t-fast);
+}
+.palette-fam-tab:hover {
+  color: var(--text-0);
+  border-color: var(--line-strong);
+}
+.palette-fam-tab.active {
+  border-color: var(--brass-strong);
+  background: var(--brass-soft);
+  color: var(--brass-strong);
+  font-weight: 600;
+}
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.swatch-chip {
+  height: 26px;
+  border-radius: var(--r-sm);
+  border: 2px solid transparent;
+  cursor: pointer;
+  position: relative;
+  transition: transform var(--t-fast), border-color var(--t-fast);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+.swatch-chip:hover {
+  transform: scale(1.12);
+  z-index: 2;
+  border-color: var(--text-0);
+}
+.swatch-chip.active {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 1px var(--cyan), inset 0 0 0 1px #fff;
+  transform: scale(1.06);
+}
+.swatch-active-label {
+  font-size: 11px;
+  color: var(--text-1);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.swatch-active-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
 /* Stage Area & Canvas */
 .stage {
   grid-area: stage;

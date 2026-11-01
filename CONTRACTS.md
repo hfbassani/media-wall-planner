@@ -5,7 +5,7 @@ Modules talk to each other **only** through the APIs listed here and through bus
 Never write the literal closing script tag sequence inside any JS file, because `build.sh` inlines the files.
 
 ## Load order (dev.html and build.sh use the same order)
-`00-namespace` → `01-bus` → `02-vocab` → `state` → `persistence` → `photo` → `photo-calibrate` → `textures` → `render` → `export` → `canvas` → `input` → `templates` → `prompt` → `providers` → `studio` → `ui` → `main`
+`00-namespace` → `01-bus` → `02-vocab` → `03-furniture` → `state` → `persistence` → `photo` → `photo-calibrate` → `textures` → `parts` → `render` → `export` → `canvas` → `input` → `templates` → `prompt` → `providers` → `studio` → `ui` → `main`
 
 ## Units & coordinates
 - Model units are **centimetres**. The origin is the bottom-left of the wall at floor level. +Y points up (AFF = Above Finished Floor).
@@ -18,7 +18,10 @@ State = { schemaVersion: 1, name: string, wallWidth: cm, wallHeight: cm, mood: M
 Element = {
   id: string, type: PresetKey | 'custom', label: string,
   x, y, width, height,            // cm; x from the left wall, y = bottom edge AFF
-  texture: TextureId, color: '#rrggbb', opacity: 0..1,
+  texture: TextureId, color: '#rrggbb', colorId?: string | null,
+  secondaryTexture?: TextureId | null, secondaryColor?: '#rrggbb' | null, secondaryColorId?: string | null,
+  params?: Object,                // e.g. { shelves, bays, drawers, topSlabCm, plinthHeightCm, frameWidthCm, handleStyle, archTop, showProps }
+  opacity: 0..1,
   ledHalo: bool, ledTemp: 3000 | 4000, ledUnderglow: bool,
   zIndex: int                     // == array index (the store normalizes it)
 }

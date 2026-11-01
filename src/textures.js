@@ -145,9 +145,9 @@
           ctx.stroke();
         }
       }
-      doorSplits(ctx, w, h, s, c);
+      if (!el._bare) doorSplits(ctx, w, h, s, c);
       // recessed handle groove along the top
-      if (h / s >= 25 && w / s >= 60) {
+      if (!el._bare && h / s >= 25 && w / s >= 60) {
         const gy = Math.max(2, 2.5 * s);
         ctx.fillStyle = U.rgba(U.shade(c, -0.7), 0.55);
         ctx.fillRect(0, gy, w, Math.max(1, 0.6 * s));
@@ -164,7 +164,7 @@
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
       noise(ctx, w, h, rand, 0.12, 0.035);
-      doorSplits(ctx, w, h, s, c);
+      if (!el._bare) doorSplits(ctx, w, h, s, c);
       edgeShading(ctx, w, h, s);
     },
 
@@ -640,11 +640,16 @@
     },
   };
 
-  function paint(ctx, el, w, h, s, time) {
+  function paintSurface(ctx, el, w, h, s, time) {
     (painters[el.texture] || painters.matte)(ctx, el, w, h, s, time);
+  }
+  function paint(ctx, el, w, h, s, time) {
+    if (A.parts && A.parts.paint(ctx, el, w, h, s, time)) return;
+    paintSurface(ctx, el, w, h, s, time);
   }
 
   const textures = {
+    paintSurface,
     list() {
       return Object.entries(A.vocab.textures).map(([id, t]) => ({ id, label: t.label }));
     },
@@ -669,7 +674,10 @@
       }
       const m = ctx.getTransform();
       const scale = Math.max(1, Math.hypot(m.a, m.b));
-      const key = [el.id, el.texture, el.color, Math.round(w), Math.round(h), s.toFixed(3), scale.toFixed(2)].join('|');
+      const key = [
+        el.id, el.texture, el.color, el.secondaryTexture || '', el.secondaryColor || '', JSON.stringify(el.params || {}),
+        Math.round(w), Math.round(h), s.toFixed(3), scale.toFixed(2),
+      ].join('|');
       let tile = cache.get(key);
       if (tile) {
         cache.delete(key);

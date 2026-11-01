@@ -61,7 +61,47 @@
 
   function describeElement(el, state) {
     const m = V.moods[state.mood] || V.moods.japandi;
-    const materialPhrase = (m.materials && m.materials[el.texture]) || (V.textures[el.texture] && V.textures[el.texture].phrase) || 'architectural finish';
+    const preset = V.presets[el.type];
+    const arche = (V.archetypes && V.archetypes[(preset && preset.archetype) || 'plain']) || { zones: {} };
+
+    // Primary material phrase (incorporates named palette swatch if selected)
+    let primaryMat = '';
+    if (el.colorId && V.swatchIndex && V.swatchIndex[el.colorId]) {
+      const sw = V.swatchIndex[el.colorId];
+      const texN = (V.textureNoun && V.textureNoun[el.texture]) || el.texture;
+      primaryMat = `${texN} in ${sw.phrase}`;
+    } else {
+      primaryMat = (m.materials && m.materials[el.texture]) || (V.textures[el.texture] && V.textures[el.texture].phrase) || 'architectural finish';
+    }
+
+    // Secondary material phrase (if applicable)
+    let secondaryMat = '';
+    if (el.secondaryTexture && arche.zones && arche.zones.secondary) {
+      const secLabel = arche.zones.secondary.toLowerCase();
+      let phrase = '';
+      if (el.secondaryColorId && V.swatchIndex && V.swatchIndex[el.secondaryColorId]) {
+        const sw2 = V.swatchIndex[el.secondaryColorId];
+        const texN2 = (V.textureNoun && V.textureNoun[el.secondaryTexture]) || el.secondaryTexture;
+        phrase = `${texN2} in ${sw2.phrase}`;
+      } else {
+        phrase = (m.materials && m.materials[el.secondaryTexture]) || (V.textures[el.secondaryTexture] && V.textures[el.secondaryTexture].phrase) || el.secondaryTexture;
+      }
+      secondaryMat = `, with ${secLabel} in ${phrase}`;
+    }
+
+    // Structural parameters
+    const p = el.params || {};
+    const paramDetails = [];
+    if (p.archTop) paramDetails.push('featuring an architectural arched top');
+    if (p.shelves > 0) paramDetails.push(`${p.shelves} horizontal shelves`);
+    if (p.drawers > 0) paramDetails.push(`${p.drawers} drawer row${p.drawers > 1 ? 's' : ''}`);
+    if (p.bays > 0) paramDetails.push(`${p.bays} vertical door bays`);
+    if (p.topSlabCm > 0) paramDetails.push(`${Math.round(p.topSlabCm)}cm countertop slab`);
+    if (p.plinthHeightCm > 0) paramDetails.push(`resting on a ${Math.round(p.plinthHeightCm)}cm recessed plinth`);
+    if (p.handleStyle && V.handlePhrase && V.handlePhrase[p.handleStyle]) {
+      paramDetails.push(V.handlePhrase[p.handleStyle]);
+    }
+    const paramStr = paramDetails.length ? ` (${paramDetails.join(', ')})` : '';
 
     let spatialPrefix = '';
     const vZone = getVerticalZone(el, state.wallHeight);
@@ -89,11 +129,9 @@
 
     const w = Math.round(el.width);
     const h = Math.round(el.height);
-    const preset = V.presets[el.type];
     const noun = (preset && preset.noun) || el.label.toLowerCase();
-    const detailDesc = preset && preset.description ? ` (${preset.description})` : '';
 
-    return `${spatialPrefix} a ${w}cm wide by ${h}cm high ${noun}: finished in ${materialPhrase}${detailDesc}${ledDesc}.`;
+    return `${spatialPrefix} a ${w}cm wide by ${h}cm high ${noun}${paramStr}: finished in ${primaryMat}${secondaryMat}${ledDesc}.`;
   }
 
   function describeElements(state) {
@@ -122,7 +160,10 @@
     const hasFabric = state.elements.some((e) => e.texture === 'fabric');
     const hasMirror = state.elements.some((e) => e.texture === 'mirror');
 
-    const hasCredenza = state.elements.some((e) => e.type.includes('credenza') || e.type.includes('bench') || e.type === 'upper' || e.type === 'tower_vert');
+    const hasCredenza = state.elements.some((e) => e.type.includes('credenza') || e.type.includes('bench') || e.type === 'upper' || e.type === 'tower_vert' || e.type.includes('sideboard') || e.type.includes('drawer') || e.type.includes('desk'));
+    const hasVitrine = state.elements.some((e) => e.type.includes('vitrine'));
+    const hasSeating = state.elements.some((e) => e.type.includes('chair') || e.type.includes('sofa') || (V.presets[e.type] && V.presets[e.type].category === 'seating'));
+    const hasLamps = state.elements.some((e) => e.type.includes('lamp') || e.type.includes('pendant'));
     const hasTv = state.elements.some((e) => e.type.startsWith('tv') || e.type.startsWith('screen') || e.texture === 'glass');
     const hasSoundbar = state.elements.some((e) => e.type === 'soundbar' || e.type === 'speaker_inwall' || e.type === 'subwoofer' || e.type === 'av_bay');
     const hasFireplace = state.elements.some((e) => e.type.includes('fireplace') || e.type.includes('hearth'));
@@ -188,6 +229,18 @@
     if (hasFireplace) {
       const fireMat = (m.materials && m.materials.fireplace) || 'frameless linear electric fireplace';
       craftBulletPoints.push(`- Fireplace & Hearth: Flush integrated ${fireMat} with warm glowing ember bed and realistic soft flame ribbons, complemented by a cantilevered monolithic stone hearth bench.`);
+    }
+
+    if (hasVitrine) {
+      craftBulletPoints.push(`- Glass Vitrine Display: Slender-framed glass curio display cabinetry with warm interior shelf illumination showcasing curated ceramic vessels and art objects behind clear glass doors.`);
+    }
+
+    if (hasSeating) {
+      craftBulletPoints.push(`- Seating & Living Room Scale: Contemporary upholstered seating silhouettes (bouclé or linen upholstery on solid timber or blackened steel frames) providing authentic living room proportion and human scale.`);
+    }
+
+    if (hasLamps) {
+      craftBulletPoints.push(`- Decorative Accent Lighting: Architectural brass and carved stone accent lamps with warm glowing fabric shades and suspended minimalist ceiling pendants adding layered warm illumination.`);
     }
 
     if (hasProps) {

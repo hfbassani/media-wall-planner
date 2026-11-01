@@ -720,11 +720,14 @@
       const r = T.rect(el);
       if (el.ledHalo) drawHalo(ctx, el, r, T, o);
       A.textures.draw(ctx, el, r, textureOpts);
-      ctx.save();
-      ctx.strokeStyle = U.rgba(U.shade(el.color, -0.6), 0.55);
-      ctx.lineWidth = 1;
-      ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
-      ctx.restore();
+      const arche = A.parts ? A.parts.archetypeOf(el) : 'plain';
+      if (arche !== 'silhouette' && !(el.params && el.params.archTop)) {
+        ctx.save();
+        ctx.strokeStyle = U.rgba(U.shade(el.color, -0.6), 0.55);
+        ctx.lineWidth = 1;
+        ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
+        ctx.restore();
+      }
       if (el.ledUnderglow) drawUnderglow(ctx, el, r, T);
     }
     ctx.restore();

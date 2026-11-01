@@ -50,6 +50,12 @@
     const type = V.presets[raw.type] ? raw.type : 'custom';
     const preset = V.presets[type];
     const texture = V.textures[raw.texture] ? raw.texture : preset.texture;
+    const arche = (V.archetypes && V.archetypes[preset.archetype || 'plain']) || { zones: {} };
+    const hasSecondary = !!(arche.zones && arche.zones.secondary);
+    const secondaryTexture = hasSecondary
+      ? V.textures[raw.secondaryTexture] ? raw.secondaryTexture : preset.secondaryTexture || texture
+      : null;
+    const swatchId = (id) => (typeof id === 'string' && V.swatchIndex && V.swatchIndex[id] ? id : null);
     return {
       id: typeof raw.id === 'string' && raw.id ? raw.id : uid(),
       type,
@@ -60,6 +66,13 @@
       height: Math.max(V.config.minSizeCm, num(raw.height, preset.height)),
       texture,
       color: isHex(raw.color) ? raw.color.toLowerCase() : V.textures[texture].defaultColor,
+      colorId: swatchId(raw.colorId),
+      secondaryTexture,
+      secondaryColor: hasSecondary
+        ? isHex(raw.secondaryColor) ? raw.secondaryColor.toLowerCase() : preset.secondaryColor || V.textures[secondaryTexture].defaultColor
+        : null,
+      secondaryColorId: hasSecondary ? swatchId(raw.secondaryColorId) : null,
+      params: V.resolveParams ? V.resolveParams(type, raw.params) : {},
       opacity: clamp(num(raw.opacity, 1), 0.05, 1),
       ledHalo: !!raw.ledHalo,
       ledTemp: raw.ledTemp === 4000 ? 4000 : 3000,
@@ -199,6 +212,11 @@
             height: p.height,
             texture: p.texture,
             color: p.color,
+            colorId: p.colorId || null,
+            secondaryTexture: p.secondaryTexture,
+            secondaryColor: p.secondaryColor,
+            secondaryColorId: p.secondaryColorId || null,
+            params: p.params ? Object.assign({}, p.params) : undefined,
             x: Math.round((state.wallWidth - (partial.width || p.width)) / 2),
             y: p.y,
             ledHalo: !!p.ledHalo,

@@ -455,6 +455,113 @@ html, body {
   font-weight: 600;
 }
 
+/* Multi-Part Material Zone Tabs */
+.mat-zone-tabs {
+  display: flex;
+  background: var(--bg-1);
+  padding: 3px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  margin-bottom: 10px;
+  gap: 3px;
+}
+.mat-zone-tab {
+  flex: 1;
+  text-align: center;
+  padding: 6px 6px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--text-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+.mat-zone-tab:hover {
+  color: var(--text-0);
+}
+.mat-zone-tab.active {
+  background: var(--bg-3);
+  color: var(--brass-strong);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Curated Swatch Palette Picker */
+.palette-family-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  margin-bottom: 8px;
+  padding-bottom: 2px;
+}
+.palette-family-tabs::-webkit-scrollbar {
+  height: 3px;
+}
+.palette-fam-tab {
+  padding: 3px 6px;
+  font-size: 10.5px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  color: var(--text-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--t-fast);
+}
+.palette-fam-tab:hover {
+  color: var(--text-0);
+  border-color: var(--line-strong);
+}
+.palette-fam-tab.active {
+  border-color: var(--brass-strong);
+  background: var(--brass-soft);
+  color: var(--brass-strong);
+  font-weight: 600;
+}
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.swatch-chip {
+  height: 26px;
+  border-radius: var(--r-sm);
+  border: 2px solid transparent;
+  cursor: pointer;
+  position: relative;
+  transition: transform var(--t-fast), border-color var(--t-fast);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+.swatch-chip:hover {
+  transform: scale(1.12);
+  z-index: 2;
+  border-color: var(--text-0);
+}
+.swatch-chip.active {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 1px var(--cyan), inset 0 0 0 1px #fff;
+  transform: scale(1.06);
+}
+.swatch-active-label {
+  font-size: 11px;
+  color: var(--text-1);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.swatch-active-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
 /* Stage Area & Canvas */
 .stage {
   grid-area: stage;
@@ -1995,6 +2102,397 @@ html, body {
 })();
 </script>
 <script>
+/* === src/03-furniture.js === */
+/* Arch2D — furniture catalog extension (data only). Adds curated finish palettes,
+   multi-part archetypes (primary vs. secondary material zones + structural params),
+   and the expanded furniture presets. Merges into A.vocab; no behaviour. */
+(function () {
+  'use strict';
+  const A = window.Arch2D;
+  const V = A.vocab;
+
+  /* ---------- Curated finish palettes ---------- */
+  const sw = (id, label, hex, phrase) => ({ id, label, hex, phrase });
+  const palettes = {
+    woods: {
+      label: 'Woods',
+      swatches: [
+        sw('nordic_ash', 'Bleached Nordic Ash', '#dfd3c0', 'bleached pale Nordic white ash timber'),
+        sw('white_oak', 'Natural White Oak', '#c2a37d', 'natural matte-oiled European white oak'),
+        sw('honey_oak', 'Warm Honey Oak', '#b08555', 'warm honey-toned white oak'),
+        sw('teak_amber', 'Golden Burma Teak', '#9c6438', 'warm golden mid-century Burmese teak'),
+        sw('natural_walnut', 'American Black Walnut', '#6e4f38', 'rich natural American black walnut'),
+        sw('smoked_oak', 'Smoked Brown Oak', '#544030', 'kiln-smoked dark brown European oak'),
+        sw('eucalyptus', 'Smoked Eucalyptus', '#42352c', 'deep smoked figured eucalyptus'),
+        sw('wenge_espresso', 'Espresso Stained Oak', '#2d241e', 'deep espresso-stained oak'),
+        sw('ebony_macassar', 'Macassar Ebony', '#241f1c', 'dark striated Macassar ebony'),
+        sw('charred_ash', 'Charred Shou Sugi Ban', '#1a1918', 'charred black Shou Sugi Ban timber'),
+      ],
+    },
+    lacquers: {
+      label: 'Lacquers',
+      swatches: [
+        sw('chalk_white', 'Pure Chalk White', '#f2f0eb', 'crisp chalk-white ultra-matte lacquer'),
+        sw('alabaster', 'Warm Alabaster Ivory', '#e8e2d5', 'soft warm alabaster ivory matte lacquer'),
+        sw('cashmere', 'Cashmere Sand', '#dcd2c0', 'warm cashmere sand soft-touch lacquer'),
+        sw('greige_putty', 'Architectural Greige', '#c7bfb0', 'refined warm greige putty lacquer'),
+        sw('taupe_stone', 'Mushroom Taupe', '#9e9486', 'earthy muted mushroom taupe matte finish'),
+        sw('pebble_grey', 'Warm Pebble Grey', '#85827c', 'balanced warm pebble grey matte lacquer'),
+        sw('sage_olive', 'Muted Sage Olive', '#798272', 'muted organic sage-olive green lacquer'),
+        sw('eucalyptus_grn', 'Deep Botanical Green', '#3b4a3f', 'deep forest green matte lacquer'),
+        sw('fjord_blue', 'Nordic Fjord Blue', '#455363', 'deep muted Nordic fjord slate-blue lacquer'),
+        sw('terracotta', 'Baked Terracotta Clay', '#a6634b', 'warm earthy baked terracotta clay finish'),
+        sw('anthracite', 'Anthracite Charcoal', '#323336', 'deep anthracite charcoal ultra-matte lacquer'),
+        sw('onyx_black', 'Carbon Onyx Black', '#161719', 'velvet carbon onyx matte-black lacquer'),
+      ],
+    },
+    stones: {
+      label: 'Stones',
+      swatches: [
+        sw('calacatta_gold', 'Calacatta Gold', '#efeae0', 'honed Calacatta Oro marble with warm gold and grey veining'),
+        sw('carrara_white', 'Bianco Carrara', '#e3e5e6', 'white Bianco Carrara marble with soft feathery grey veins'),
+        sw('taj_mahal', 'Taj Mahal Quartzite', '#ded4c1', 'creamy Taj Mahal quartzite with delicate caramel veins'),
+        sw('roman_trav', 'Classic Roman Travertine', '#d6c6a5', 'unfilled vein-cut Roman travertine in warm biscuit tones'),
+        sw('limestone_sand', 'Jura Sand Limestone', '#c8bca6', 'honed warm Jura sand limestone'),
+        sw('silver_trav', 'Silver Titanium Travertine', '#969188', 'honed silver-grey titanium travertine with horizontal strata'),
+        sw('pietra_grey', 'Honed Pietra Grey', '#57534e', 'honed charcoal-taupe Pietra Grey marble with fine white streaks'),
+        sw('verde_alpi', 'Verde Alpi Marble', '#26382e', 'deep emerald Verde Alpi marble with white veining'),
+        sw('rosso_levanto', 'Rosso Levanto', '#4a2527', 'deep burgundy Rosso Levanto marble with dramatic white veins'),
+        sw('nero_marquina', 'Nero Marquina Black', '#1b1b1d', 'honed black Nero Marquina marble with high-contrast white veining'),
+      ],
+    },
+    metals: {
+      label: 'Metals & Fabrics',
+      swatches: [
+        sw('champagne_brs', 'Champagne Brass', '#c8ad7d', 'satin brushed champagne brass'),
+        sw('satin_gold', 'Brushed Warm Brass', '#b59153', 'brushed warm architectural brass'),
+        sw('rose_copper', 'Brushed Rose Copper', '#a66e53', 'warm brushed rose copper'),
+        sw('antique_bronze', 'Burnished Bronze', '#5e4b38', 'dark burnished antique bronze'),
+        sw('brushed_nickel', 'Brushed Stainless', '#b2b6ba', 'satin brushed stainless steel'),
+        sw('gunmetal', 'Anodized Gunmetal', '#42464b', 'dark anodized gunmetal titanium'),
+        sw('black_steel', 'Blackened Raw Steel', '#202225', 'matte blackened cold-rolled steel'),
+        sw('oatmeal_linen', 'Oatmeal Belgian Linen', '#cec5b4', 'natural oatmeal Belgian linen weave'),
+        sw('boucle_cream', 'Ivory Bouclé Wool', '#e6dfd1', 'tactile ivory bouclé wool upholstery'),
+        sw('smoked_bronze', 'Smoked Bronze Glass', '#332d28', 'tinted smoked bronze reflective glass'),
+      ],
+    },
+  };
+  const swatchIndex = {};
+  for (const fam of Object.values(palettes)) for (const s of fam.swatches) swatchIndex[s.id] = s;
+
+  /* Which palette tab opens by default for each texture. */
+  const textureFamily = {
+    slats: 'woods', woodgrain: 'woods', fluted: 'woods',
+    matte: 'lacquers', concrete: 'lacquers', niche: 'lacquers',
+    marble: 'stones', travertine: 'stones',
+    metal: 'metals', mirror: 'metals', glass: 'metals', mesh: 'metals', fabric: 'metals', fireplace: 'metals',
+  };
+
+  /* Short material nouns used when a named swatch is applied ("<noun> in <swatch phrase>"). */
+  const textureNoun = {
+    slats: 'fluted timber slats', woodgrain: 'continuous-grain veneer', matte: 'ultra-matte lacquer',
+    glass: 'glass', mesh: 'acoustic mesh', niche: 'lacquered finish', fireplace: 'firebox surround',
+    marble: 'stone slab', travertine: 'travertine stone', fluted: 'micro-fluted paneling',
+    concrete: 'micro-cement', metal: 'brushed metal', fabric: 'upholstery fabric', mirror: 'mirror glass',
+  };
+
+  /* ---------- Multi-part archetypes ----------
+     zones: inspector labels for the two material zones (secondary null = single zone).
+     controls: which structural params the inspector exposes. */
+  const archetypes = {
+    plain: { zones: { primary: 'Material', secondary: null }, controls: [] },
+    niche: {
+      zones: { primary: 'Frame & Shelves', secondary: 'Back Panel' },
+      controls: ['shelves', 'bays', 'frameWidthCm', 'archTop', 'showProps'],
+    },
+    vitrine: {
+      zones: { primary: 'Cabinet Frame', secondary: 'Interior Back' },
+      controls: ['shelves', 'bays', 'frameWidthCm', 'handleStyle', 'archTop', 'showProps'],
+    },
+    cabinet: {
+      zones: { primary: 'Door & Drawer Fronts', secondary: 'Top Slab & Plinth' },
+      controls: ['bays', 'drawers', 'topSlabCm', 'plinthHeightCm', 'handleStyle'],
+    },
+    cladding: { zones: { primary: 'Slats / Ribs', secondary: 'Backing / Reveal' }, controls: ['slatPitch'] },
+    framed: { zones: { primary: 'Surface', secondary: 'Frame' }, controls: ['frameWidthCm', 'archTop'] },
+    fireplace: { zones: { primary: 'Firebox', secondary: 'Surround' }, controls: ['frameWidthCm'] },
+    panelGrid: { zones: { primary: 'Panels', secondary: 'Reveal Trim' }, controls: ['bays', 'shelves'] },
+    silhouette: { zones: { primary: 'Body / Upholstery', secondary: 'Legs / Base / Shade' }, controls: [] },
+  };
+
+  /* Param schema: inspector control definitions + clamping. */
+  const paramSchema = {
+    shelves: { label: 'Shelves / Rows', kind: 'int', min: 0, max: 8, def: 0 },
+    bays: { label: 'Bays / Columns (0 = auto)', kind: 'int', min: 0, max: 6, def: 0 },
+    drawers: { label: 'Drawer Rows', kind: 'int', min: 0, max: 4, def: 0 },
+    frameWidthCm: { label: 'Frame Thickness (cm)', kind: 'num', min: 0, max: 12, def: 3 },
+    topSlabCm: { label: 'Top Slab (cm)', kind: 'num', min: 0, max: 15, def: 0 },
+    plinthHeightCm: { label: 'Plinth / Toe-kick (cm)', kind: 'num', min: 0, max: 20, def: 0 },
+    handleStyle: {
+      label: 'Handles', kind: 'enum', def: 'groove',
+      options: { none: 'Push-Latch', groove: 'Shadow Groove', bar_brass: 'Brass Bar', bar_black: 'Black Bar', knob: 'Knob' },
+    },
+    slatPitch: { label: 'Slat Pitch', kind: 'enum', def: 'standard', options: { fine: 'Fine', standard: 'Standard', wide: 'Wide' } },
+    archTop: { label: 'Arched Top', kind: 'bool', def: false },
+    showProps: { label: 'Styled Decor', kind: 'bool', def: true },
+  };
+
+  const handlePhrase = {
+    none: 'handleless push-latch fronts', groove: 'recessed shadowline finger grooves',
+    bar_brass: 'slim brushed brass bar handles', bar_black: 'slim matte black bar handles', knob: 'small turned knob pulls',
+  };
+
+  /* ---------- Archetype assignment for existing presets ---------- */
+  const patch = {
+    tv_frame: { archetype: 'framed', secondaryTexture: 'woodgrain', secondaryColor: '#c2a37d', secondaryColorId: 'white_oak', params: { frameWidthCm: 4 } },
+    credenza_180: { archetype: 'cabinet', secondaryTexture: 'woodgrain', secondaryColor: '#9a7552', params: { handleStyle: 'groove' } },
+    credenza: { archetype: 'cabinet', secondaryTexture: 'woodgrain', secondaryColor: '#8a6a4a', params: { handleStyle: 'groove' } },
+    bench_plinth: { archetype: 'cabinet', secondaryTexture: 'matte', secondaryColor: '#2d2a27', params: { bays: 1, plinthHeightCm: 6, handleStyle: 'none' } },
+    tower_vert: { archetype: 'cabinet', secondaryTexture: 'matte', secondaryColor: '#c8c0b2', params: { bays: 1, handleStyle: 'none' } },
+    upper: { archetype: 'cabinet', secondaryTexture: 'matte', secondaryColor: '#d9d3c8', params: { handleStyle: 'none' } },
+    credenza_tambour: { archetype: 'cabinet', secondaryTexture: 'woodgrain', secondaryColor: '#7e6347', params: { bays: 1, handleStyle: 'none' } },
+    bookshelf: { archetype: 'niche', texture: 'matte', secondaryTexture: 'matte', secondaryColor: '#b8ae9f', params: { shelves: 3, frameWidthCm: 3 } },
+    niche_bar: { archetype: 'niche', texture: 'matte', secondaryTexture: 'marble', secondaryColor: '#e8e4dc', params: { shelves: 0, frameWidthCm: 3 } },
+    shadow_box: { archetype: 'niche', secondaryTexture: 'matte', secondaryColor: '#a59d90', params: { shelves: 0, frameWidthCm: 2.5 } },
+    slats: { archetype: 'cladding', secondaryTexture: 'fabric', secondaryColor: '#161616', params: { slatPitch: 'standard' } },
+    fireplace: { archetype: 'fireplace', secondaryTexture: 'metal', secondaryColor: '#202225', secondaryColorId: 'black_steel', params: { frameWidthCm: 3 } },
+    fireplace_wide: { archetype: 'fireplace', secondaryTexture: 'metal', secondaryColor: '#202225', secondaryColorId: 'black_steel', params: { frameWidthCm: 3 } },
+    prop_art: { archetype: 'framed', texture: 'concrete', color: '#e5dfd4', secondaryTexture: 'woodgrain', secondaryColor: '#c2a37d', secondaryColorId: 'white_oak', params: { frameWidthCm: 3 } },
+    prop_plant: { archetype: 'silhouette', shape: 'plant', texture: 'matte', color: '#c9bfae', secondaryTexture: 'matte', secondaryColor: '#5f6e52' },
+  };
+  for (const [k, p] of Object.entries(patch)) {
+    if (!V.presets[k]) continue;
+    const { params, ...rest } = p;
+    Object.assign(V.presets[k], rest);
+    if (params) V.presets[k].params = params;
+  }
+
+  /* ---------- New furniture presets ---------- */
+  const add = {
+    // Casegoods & workstations
+    vitrine_tall: {
+      label: 'Tall Glass Vitrine 90cm', category: 'millwork', width: 90, height: 220, y: 0,
+      archetype: 'vitrine', texture: 'woodgrain', color: '#6e4f38', colorId: 'natural_walnut',
+      secondaryTexture: 'matte', secondaryColor: '#c7bfb0', ledHalo: false,
+      params: { shelves: 5, bays: 2, frameWidthCm: 3, handleStyle: 'bar_brass', showProps: true },
+      noun: 'tall glass-front vitrine display cabinet',
+      description: 'A tall glass-front curio vitrine cabinet with slender timber mullions, warm integrated interior LED shelf lighting, and curated ceramics and glassware displayed behind clear glass doors.',
+    },
+    vitrine_low: {
+      label: 'Low Glass Vitrine 120cm', category: 'millwork', width: 120, height: 110, y: 0,
+      archetype: 'vitrine', texture: 'woodgrain', color: '#c2a37d', colorId: 'white_oak',
+      secondaryTexture: 'marble', secondaryColor: '#efeae0', secondaryColorId: 'calacatta_gold',
+      params: { shelves: 2, bays: 2, frameWidthCm: 3, handleStyle: 'bar_brass', showProps: true },
+      noun: 'mid-height glass vitrine cabinet',
+      description: 'A mid-height glass vitrine cabinet with a backlit stone interior back panel, slim glass doors, and softly illuminated display shelves.',
+    },
+    sideboard_180: {
+      label: 'Sideboard / Highboard 180cm', category: 'millwork', width: 180, height: 80, y: 0,
+      archetype: 'cabinet', texture: 'matte', color: '#798272', colorId: 'sage_olive',
+      secondaryTexture: 'marble', secondaryColor: '#efeae0', secondaryColorId: 'calacatta_gold',
+      params: { bays: 3, drawers: 1, topSlabCm: 3, plinthHeightCm: 8, handleStyle: 'bar_brass' },
+      noun: 'floor-standing dining sideboard',
+      description: 'A floor-standing sideboard at 80cm height with three door bays beneath a top drawer row, crowned by a stone countertop slab and resting on a recessed plinth.',
+    },
+    drawer_bank: {
+      label: '2-Drawer Base Module 120cm', category: 'millwork', width: 120, height: 45, y: 0,
+      archetype: 'cabinet', texture: 'matte', color: '#c7bfb0', colorId: 'greige_putty',
+      secondaryTexture: 'woodgrain', secondaryColor: '#c2a37d',
+      params: { bays: 1, drawers: 2, plinthHeightCm: 5, handleStyle: 'groove' },
+      noun: 'modular two-drawer base cabinet',
+      description: 'A modular floor-standing two-drawer base cabinet for composing custom multi-unit credenzas, with deep soft-close drawers and crisp shadow reveals.',
+    },
+    desk_floating: {
+      label: 'Floating Desk 130cm', category: 'millwork', width: 130, height: 12, y: 72,
+      archetype: 'cabinet', texture: 'woodgrain', color: '#c2a37d', colorId: 'white_oak',
+      secondaryTexture: 'woodgrain', secondaryColor: '#c2a37d',
+      params: { bays: 2, drawers: 1, handleStyle: 'groove' },
+      noun: 'cantilevered floating home-office desk',
+      description: 'An integrated cantilevered writing desk mounted at an ergonomic 72cm height, with twin slim drawers and a continuous solid timber top.',
+    },
+    console_vinyl: {
+      label: 'Vinyl & Turntable Console 150cm', category: 'millwork', width: 150, height: 65, y: 0,
+      archetype: 'cabinet', texture: 'woodgrain', color: '#6e4f38', colorId: 'natural_walnut',
+      secondaryTexture: 'metal', secondaryColor: '#202225', secondaryColorId: 'black_steel',
+      params: { bays: 3, drawers: 0, topSlabCm: 2, plinthHeightCm: 10, handleStyle: 'none' },
+      noun: 'audiophile vinyl record console',
+      description: 'A bespoke audiophile console with vertical vinyl record divider slots, a ventilated amplifier bay, and a solid top sized for a turntable, raised on slim steel legs.',
+    },
+    cabinet_arched: {
+      label: 'Arched Bookcase 90cm', category: 'shelving', width: 90, height: 210, y: 0,
+      archetype: 'niche', texture: 'matte', color: '#e8e2d5', colorId: 'alabaster',
+      secondaryTexture: 'travertine', secondaryColor: '#d6c6a5', secondaryColorId: 'roman_trav',
+      params: { shelves: 4, frameWidthCm: 4, archTop: true, showProps: true },
+      noun: 'full-height arched recessed bookcase',
+      description: 'A full-height arched-top recessed bookcase with a curved stone back panel, solid shelves, and curated books and ceramics.',
+    },
+    alcove_logs: {
+      label: 'Firewood Log Alcove', category: 'fireplace', width: 45, height: 120, y: 25,
+      archetype: 'niche', propKind: 'logs', texture: 'metal', color: '#202225', colorId: 'black_steel',
+      secondaryTexture: 'metal', secondaryColor: '#141517',
+      params: { shelves: 0, frameWidthCm: 2, showProps: true },
+      noun: 'recessed firewood log storage alcove',
+      description: 'A vertical blackened-steel lined alcove neatly stacked with split natural oak firewood logs beside the hearth.',
+    },
+
+    // Shelving & wall architecture
+    grid_cubbies: {
+      label: 'Open Cubby Grid 3×3', category: 'shelving', width: 120, height: 120, y: 70,
+      archetype: 'niche', texture: 'woodgrain', color: '#c2a37d', colorId: 'white_oak',
+      secondaryTexture: 'matte', secondaryColor: '#455363', secondaryColorId: 'fjord_blue',
+      params: { shelves: 2, bays: 3, frameWidthCm: 2.5, showProps: true },
+      noun: 'modular open cubby grid shelving',
+      description: 'A modular open grid shelving system of square cubbies with contrasting painted back panels, sparsely styled with books and objects.',
+    },
+    niche_arched: {
+      label: 'Arched Display Alcove', category: 'shelving', width: 75, height: 150, y: 75,
+      archetype: 'niche', texture: 'matte', color: '#e6dfd3',
+      secondaryTexture: 'marble', secondaryColor: '#ded4c1', secondaryColorId: 'taj_mahal',
+      params: { shelves: 2, frameWidthCm: 0, archTop: true, showProps: true },
+      noun: 'arched recessed display alcove',
+      description: 'A softly curved arch-top recessed wall alcove with a stone-lined back, floating shelves, and warm overhead spotlighting.',
+    },
+    pelmet_ceiling: {
+      label: 'Ceiling LED Bulkhead', category: 'backdrops', width: 400, height: 20, y: 260,
+      archetype: 'plain', texture: 'matte', color: '#f2f0eb', colorId: 'chalk_white', ledUnderglow: true,
+      noun: 'dropped ceiling bulkhead pelmet with LED cove',
+      description: 'An architectural dropped ceiling bulkhead running along the top of the wall, with a concealed downward LED cove washing light over the feature wall.',
+    },
+    panel_dado: {
+      label: 'Wainscot Dado Panel', category: 'backdrops', width: 400, height: 105, y: 0,
+      archetype: 'cabinet', texture: 'fluted', color: '#c2a37d', colorId: 'white_oak',
+      secondaryTexture: 'woodgrain', secondaryColor: '#9a7552',
+      params: { bays: 1, topSlabCm: 3, handleStyle: 'none' },
+      noun: 'half-height wainscot dado paneling',
+      description: 'Lower-wall wainscot dado paneling with vertical reeding and a solid timber capping ledge.',
+    },
+    column_pillar: {
+      label: 'Architectural Pillar', category: 'backdrops', width: 30, height: 280, y: 0,
+      archetype: 'plain', texture: 'travertine', color: '#d6c6a5', colorId: 'roman_trav',
+      noun: 'full-height architectural pilaster column',
+      description: 'A full-height architectural pilaster column clad in honed stone, dividing the wall into balanced zones.',
+    },
+    panel_acoustic: {
+      label: 'Acoustic Wall Tiles', category: 'backdrops', width: 120, height: 180, y: 50,
+      archetype: 'panelGrid', texture: 'fabric', color: '#cec5b4', colorId: 'oatmeal_linen',
+      secondaryTexture: 'metal', secondaryColor: '#5e4b38', secondaryColorId: 'antique_bronze',
+      params: { bays: 2, shelves: 3 },
+      noun: 'upholstered acoustic wall panel array',
+      description: 'An array of sound-absorbing upholstered linen wall tiles with softly beveled seams and slim bronze reveal trims.',
+    },
+
+    // Seating silhouettes
+    bench_upholst: {
+      label: 'Upholstered Bench 140cm', category: 'seating', width: 140, height: 45, y: 0,
+      archetype: 'silhouette', shape: 'bench', texture: 'fabric', color: '#e6dfd1', colorId: 'boucle_cream',
+      secondaryTexture: 'woodgrain', secondaryColor: '#6e4f38', secondaryColorId: 'natural_walnut',
+      noun: 'low upholstered cushion bench',
+      description: 'A low architectural bench with a tactile upholstered seat cushion resting on a solid timber base.',
+    },
+    chair_lounge: {
+      label: 'Lounge Chair', category: 'seating', width: 82, height: 74, y: 0,
+      archetype: 'silhouette', shape: 'lounge', texture: 'fabric', color: '#e6dfd1', colorId: 'boucle_cream',
+      secondaryTexture: 'woodgrain', secondaryColor: '#9c6438', secondaryColorId: 'teak_amber',
+      noun: 'low sculptural lounge armchair',
+      description: 'A designer low-profile sculptural lounge armchair with rounded upholstered cushions on a warm timber frame.',
+    },
+    chair_desk: {
+      label: 'Desk Chair', category: 'seating', width: 58, height: 80, y: 0,
+      archetype: 'silhouette', shape: 'chair', texture: 'fabric', color: '#85827c',
+      secondaryTexture: 'metal', secondaryColor: '#202225', secondaryColorId: 'black_steel',
+      noun: 'minimalist upholstered desk chair',
+      description: 'A minimalist upholstered task chair with a slim metal frame, positioned at the desk.',
+    },
+    sofa_elevation: {
+      label: '3-Seater Sofa 240cm', category: 'seating', width: 240, height: 78, y: 0,
+      archetype: 'silhouette', shape: 'sofa', texture: 'fabric', color: '#cec5b4', colorId: 'oatmeal_linen',
+      secondaryTexture: 'woodgrain', secondaryColor: '#2d241e',
+      noun: 'low-slung three-seater sofa',
+      description: 'A low-slung contemporary three-seater sofa with deep linen cushions and a recessed dark plinth base, giving the room human scale.',
+    },
+
+    // Lighting, mirrors & decor
+    mirror_arch: {
+      label: 'Arched Mirror', category: 'props', width: 75, height: 185, y: 0,
+      archetype: 'framed', texture: 'mirror', color: '#35302c',
+      secondaryTexture: 'metal', secondaryColor: '#b59153', secondaryColorId: 'satin_gold',
+      params: { frameWidthCm: 2, archTop: true },
+      noun: 'arched full-length mirror',
+      description: 'A full-length arched smoked bronze mirror in a slim brushed brass frame.',
+    },
+    lamp_floor: {
+      label: 'Floor Lamp', category: 'props', width: 40, height: 165, y: 0,
+      archetype: 'silhouette', shape: 'floorLamp', texture: 'metal', color: '#b59153', colorId: 'satin_gold',
+      secondaryTexture: 'fabric', secondaryColor: '#e8e2d5', ledHalo: true,
+      noun: 'slender sculptural floor lamp',
+      description: 'A slender sculptural brass floor lamp with a warm glowing linen drum shade.',
+    },
+    lamp_table: {
+      label: 'Table Lamp', category: 'props', width: 28, height: 42, y: 63,
+      archetype: 'silhouette', shape: 'tableLamp', texture: 'marble', color: '#e3e5e6',
+      secondaryTexture: 'fabric', secondaryColor: '#e8e2d5', ledHalo: true,
+      noun: 'sculptural stone table lamp',
+      description: 'A sculptural table lamp with a carved stone base and a warm glowing fabric shade, sitting on the console top.',
+    },
+    light_pendant: {
+      label: 'Pendant Light', category: 'props', width: 22, height: 95, y: 185,
+      archetype: 'silhouette', shape: 'pendant', texture: 'metal', color: '#202225',
+      secondaryTexture: 'glass', secondaryColor: '#f0e0c0', ledUnderglow: true,
+      noun: 'suspended ceiling pendant light',
+      description: 'A suspended cylindrical pendant light hanging from the ceiling on a slim cord, casting a warm downward glow.',
+    },
+    prop_turntable: {
+      label: 'Turntable & Amp', category: 'props', width: 45, height: 16, y: 63,
+      archetype: 'silhouette', shape: 'turntable', texture: 'woodgrain', color: '#6e4f38',
+      secondaryTexture: 'metal', secondaryColor: '#b2b6ba',
+      noun: 'hi-fi vinyl turntable',
+      description: 'An audiophile walnut-plinth vinyl turntable with a brushed aluminium tonearm sitting on the console.',
+    },
+    prop_decor_set: {
+      label: 'Console Decor Set', category: 'props', width: 55, height: 28, y: 63,
+      archetype: 'silhouette', shape: 'decor', texture: 'matte', color: '#e8e2d5',
+      secondaryTexture: 'matte', secondaryColor: '#7d6b5d',
+      noun: 'curated console decor arrangement',
+      description: 'A curated stack of coffee-table art books beside a sculptural ceramic vessel with dried botanicals.',
+    },
+  };
+  Object.assign(V.presets, add);
+
+  if (V.categories && !V.categories.seating) {
+    const cats = {};
+    for (const [k, c] of Object.entries(V.categories)) {
+      if (k === 'props') cats.seating = { label: 'Seating', icon: '🛋️' };
+      cats[k] = c;
+    }
+    for (const k of Object.keys(V.categories)) delete V.categories[k];
+    Object.assign(V.categories, cats);
+  }
+
+  /* Effective params for a preset/element: schema defaults ← preset params ← element params. */
+  function resolveParams(presetKey, raw) {
+    const p = V.presets[presetKey] || {};
+    const arche = archetypes[p.archetype || 'plain'] || archetypes.plain;
+    const out = {};
+    const keys = new Set([...arche.controls, ...Object.keys(p.params || {})]);
+    for (const k of keys) {
+      const sc = paramSchema[k];
+      if (!sc) continue;
+      let v = raw && raw[k] !== undefined ? raw[k] : p.params && p.params[k] !== undefined ? p.params[k] : sc.def;
+      if (sc.kind === 'int' || sc.kind === 'num') {
+        v = Number(v);
+        if (!Number.isFinite(v)) v = sc.def;
+        v = Math.min(sc.max, Math.max(sc.min, sc.kind === 'int' ? Math.round(v) : v));
+      } else if (sc.kind === 'bool') v = !!v;
+      else if (sc.kind === 'enum' && !(v in sc.options)) v = sc.def;
+      out[k] = v;
+    }
+    return out;
+  }
+
+  Object.assign(V, { palettes, swatchIndex, textureFamily, textureNoun, archetypes, paramSchema, handlePhrase, resolveParams });
+})();
+</script>
+<script>
 /* === src/state.js === */
 /* Arch2D — WS1: state store, selection and undo/redo history (project.md §3.5, §5). */
 (function () {
@@ -2048,6 +2546,12 @@ html, body {
     const type = V.presets[raw.type] ? raw.type : 'custom';
     const preset = V.presets[type];
     const texture = V.textures[raw.texture] ? raw.texture : preset.texture;
+    const arche = (V.archetypes && V.archetypes[preset.archetype || 'plain']) || { zones: {} };
+    const hasSecondary = !!(arche.zones && arche.zones.secondary);
+    const secondaryTexture = hasSecondary
+      ? V.textures[raw.secondaryTexture] ? raw.secondaryTexture : preset.secondaryTexture || texture
+      : null;
+    const swatchId = (id) => (typeof id === 'string' && V.swatchIndex && V.swatchIndex[id] ? id : null);
     return {
       id: typeof raw.id === 'string' && raw.id ? raw.id : uid(),
       type,
@@ -2058,6 +2562,13 @@ html, body {
       height: Math.max(V.config.minSizeCm, num(raw.height, preset.height)),
       texture,
       color: isHex(raw.color) ? raw.color.toLowerCase() : V.textures[texture].defaultColor,
+      colorId: swatchId(raw.colorId),
+      secondaryTexture,
+      secondaryColor: hasSecondary
+        ? isHex(raw.secondaryColor) ? raw.secondaryColor.toLowerCase() : preset.secondaryColor || V.textures[secondaryTexture].defaultColor
+        : null,
+      secondaryColorId: hasSecondary ? swatchId(raw.secondaryColorId) : null,
+      params: V.resolveParams ? V.resolveParams(type, raw.params) : {},
       opacity: clamp(num(raw.opacity, 1), 0.05, 1),
       ledHalo: !!raw.ledHalo,
       ledTemp: raw.ledTemp === 4000 ? 4000 : 3000,
@@ -2197,6 +2708,11 @@ html, body {
             height: p.height,
             texture: p.texture,
             color: p.color,
+            colorId: p.colorId || null,
+            secondaryTexture: p.secondaryTexture,
+            secondaryColor: p.secondaryColor,
+            secondaryColorId: p.secondaryColorId || null,
+            params: p.params ? Object.assign({}, p.params) : undefined,
             x: Math.round((state.wallWidth - (partial.width || p.width)) / 2),
             y: p.y,
             ledHalo: !!p.ledHalo,
@@ -3711,9 +4227,9 @@ html, body {
           ctx.stroke();
         }
       }
-      doorSplits(ctx, w, h, s, c);
+      if (!el._bare) doorSplits(ctx, w, h, s, c);
       // recessed handle groove along the top
-      if (h / s >= 25 && w / s >= 60) {
+      if (!el._bare && h / s >= 25 && w / s >= 60) {
         const gy = Math.max(2, 2.5 * s);
         ctx.fillStyle = U.rgba(U.shade(c, -0.7), 0.55);
         ctx.fillRect(0, gy, w, Math.max(1, 0.6 * s));
@@ -3730,7 +4246,7 @@ html, body {
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
       noise(ctx, w, h, rand, 0.12, 0.035);
-      doorSplits(ctx, w, h, s, c);
+      if (!el._bare) doorSplits(ctx, w, h, s, c);
       edgeShading(ctx, w, h, s);
     },
 
@@ -4206,11 +4722,16 @@ html, body {
     },
   };
 
-  function paint(ctx, el, w, h, s, time) {
+  function paintSurface(ctx, el, w, h, s, time) {
     (painters[el.texture] || painters.matte)(ctx, el, w, h, s, time);
+  }
+  function paint(ctx, el, w, h, s, time) {
+    if (A.parts && A.parts.paint(ctx, el, w, h, s, time)) return;
+    paintSurface(ctx, el, w, h, s, time);
   }
 
   const textures = {
+    paintSurface,
     list() {
       return Object.entries(A.vocab.textures).map(([id, t]) => ({ id, label: t.label }));
     },
@@ -4235,7 +4756,10 @@ html, body {
       }
       const m = ctx.getTransform();
       const scale = Math.max(1, Math.hypot(m.a, m.b));
-      const key = [el.id, el.texture, el.color, Math.round(w), Math.round(h), s.toFixed(3), scale.toFixed(2)].join('|');
+      const key = [
+        el.id, el.texture, el.color, el.secondaryTexture || '', el.secondaryColor || '', JSON.stringify(el.params || {}),
+        Math.round(w), Math.round(h), s.toFixed(3), scale.toFixed(2),
+      ].join('|');
       let tile = cache.get(key);
       if (tile) {
         cache.delete(key);
@@ -4259,6 +4783,602 @@ html, body {
   };
 
   A.textures = textures;
+})();
+</script>
+<script>
+/* === src/parts.js === */
+/* Arch2D — multi-part furniture painters. Composes the procedural texture painters
+   (A.textures.paintSurface) into objects with a primary and a secondary material zone
+   plus structural parameters (shelves, bays, drawers, slabs, plinths, arches, handles).
+   Pure Canvas 2D, deterministic per element id. Draws into (0,0,w,h). */
+(function () {
+  'use strict';
+  const A = window.Arch2D;
+  const U = A.util;
+  const V = A.vocab;
+
+  /* ---------- helpers ---------- */
+  // Textures that carry their own internal structure are flattened when used as a sub-surface.
+  const flat = (tex) => (tex === 'niche' ? 'matte' : tex);
+
+  function surf(ctx, el, tex, color, x, y, w, h, s, time, salt) {
+    if (w < 0.5 || h < 0.5) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    ctx.translate(x, y);
+    const sub = Object.assign({}, el, { texture: flat(tex), color, id: el.id + '|' + (salt || ''), _bare: true });
+    A.textures.paintSurface(ctx, sub, w, h, s, time);
+    ctx.restore();
+  }
+  const prim = (ctx, el, x, y, w, h, s, t, salt) => surf(ctx, el, el.texture, el.color, x, y, w, h, s, t, 'p' + (salt || ''));
+  const sec = (ctx, el, x, y, w, h, s, t, salt) =>
+    surf(ctx, el, el.secondaryTexture || el.texture, el.secondaryColor || U.shade(el.color, -0.25), x, y, w, h, s, t, 's' + (salt || ''));
+
+  function archPath(ctx, x, y, w, h) {
+    const ry = Math.min(w / 2, h);
+    ctx.beginPath();
+    ctx.moveTo(x, y + h);
+    ctx.lineTo(x, y + ry);
+    ctx.ellipse(x + w / 2, y + ry, w / 2, ry, 0, Math.PI, 0);
+    ctx.lineTo(x + w, y + h);
+    ctx.closePath();
+  }
+  function shapePath(ctx, x, y, w, h, arch) {
+    if (arch) archPath(ctx, x, y, w, h);
+    else {
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+    }
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, w / 2, h / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  /** Paint a material clipped to an arbitrary path built by pathFn(ctx). */
+  function fillWith(ctx, pathFn, paint) {
+    ctx.save();
+    ctx.beginPath();
+    pathFn(ctx);
+    ctx.clip();
+    paint();
+    ctx.restore();
+  }
+  function insetShadow(ctx, x, y, w, h, s) {
+    let g = ctx.createLinearGradient(0, y, 0, y + Math.min(h, 10 * s));
+    g.addColorStop(0, 'rgba(0,0,0,0.38)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, w, Math.min(h, 10 * s));
+    g = ctx.createLinearGradient(x, 0, x + Math.min(w, 5 * s), 0);
+    g.addColorStop(0, 'rgba(0,0,0,0.22)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, Math.min(w, 5 * s), h);
+  }
+  function seam(ctx, x1, y1, x2, y2, color, s) {
+    ctx.save();
+    ctx.strokeStyle = U.rgba(U.shade(color, -0.6), 0.7);
+    ctx.lineWidth = Math.max(1, 0.3 * s);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x1 + (x1 === x2 ? 1 : 0), y1 + (y1 === y2 ? 1 : 0));
+    ctx.lineTo(x2 + (x1 === x2 ? 1 : 0), y2 + (y1 === y2 ? 1 : 0));
+    ctx.stroke();
+    ctx.restore();
+  }
+  function autoBays(p, wCm, pitchCm) {
+    return p.bays > 0 ? p.bays : Math.max(1, Math.round(wCm / pitchCm));
+  }
+  const rngFor = (el, salt) => U.rng(U.hashString(el.id + '|' + salt));
+
+  /* ---------- decor inside compartments ---------- */
+  const BOOK_PALETTE = ['#7d6b5d', '#a79584', '#5d6a72', '#b9a88f', '#8b5e4a', '#3f4a52', '#d8cfc0'];
+  function drawDecor(ctx, rand, x, floorY, cw, bayH, s) {
+    if (bayH / s < 14 || cw / s < 14) return;
+    let bx = x + cw * (0.1 + rand() * 0.15);
+    const end = x + cw * (0.45 + rand() * 0.25);
+    while (bx < end) {
+      const bw = (2 + rand() * 2.5) * s;
+      const bh = Math.min(bayH * 0.82, (16 + rand() * 9) * s);
+      ctx.fillStyle = BOOK_PALETTE[Math.floor(rand() * BOOK_PALETTE.length)];
+      ctx.fillRect(bx, floorY - bh, bw, bh);
+      bx += bw + 0.3 * s;
+    }
+    if (rand() < 0.75 && end + 12 * s < x + cw) {
+      const vh = Math.min(bayH * 0.7, (11 + rand() * 9) * s);
+      const vw = vh * (0.45 + rand() * 0.25);
+      const vx = end + (5 + rand() * 4) * s + vw / 2;
+      ctx.fillStyle = rand() < 0.5 ? '#e9e3d8' : '#3b3633';
+      ctx.beginPath();
+      ctx.ellipse(vx, floorY - vh / 2, vw / 2, vh / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  function drawLogs(ctx, rand, x, y, w, h, s) {
+    const r = Math.max(2, 5.5 * s);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    let row = 0;
+    for (let cy = y + h - r; cy > y - r; cy -= r * 1.75, row++) {
+      for (let cx = x + r + (row % 2 ? r : 0); cx < x + w + r; cx += r * 2.05) {
+        const rr = r * (0.85 + rand() * 0.25);
+        const tone = ['#8a6a4a', '#9c7a55', '#7a5a3c', '#a88660'][Math.floor(rand() * 4)];
+        ctx.fillStyle = U.shade(tone, -0.35);
+        ctx.beginPath();
+        ctx.arc(cx, cy, rr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = tone;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rr * 0.82, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = U.rgba(U.shade(tone, -0.4), 0.5);
+        ctx.lineWidth = Math.max(0.5, 0.2 * s);
+        ctx.beginPath();
+        ctx.arc(cx, cy, rr * 0.45, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  /* ---------- handles ---------- */
+  function drawHandle(ctx, style, x, y, w, h, s, isDrawer, hingeLeft) {
+    if (style === 'none' || w < 4 || h < 4) return;
+    ctx.save();
+    if (style === 'groove') {
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(x + w * 0.08, y + Math.max(1, 1.5 * s), w * 0.84, Math.max(1, 0.6 * s));
+    } else if (style === 'knob') {
+      const r = Math.max(1.2, 1.2 * s);
+      const cx = isDrawer ? x + w / 2 : hingeLeft ? x + w - 4 * s : x + 4 * s;
+      const cy = isDrawer ? y + h / 2 : y + Math.min(h * 0.25, 12 * s);
+      ctx.fillStyle = '#b59153';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = style === 'bar_brass' ? '#c2a061' : '#1b1c1e';
+      const t = Math.max(1, 0.8 * s);
+      if (isDrawer) {
+        const bw = Math.min(w * 0.4, 30 * s);
+        ctx.fillRect(x + (w - bw) / 2, y + h / 2 - t / 2, bw, t);
+      } else {
+        const bh = Math.min(h * 0.35, 25 * s);
+        const bx = hingeLeft ? x + w - 3.5 * s : x + 3.5 * s - t;
+        ctx.fillRect(bx, y + Math.min(h * 0.12, 6 * s), t, bh);
+      }
+    }
+    ctx.restore();
+  }
+
+  /* ---------- archetype painters ---------- */
+  function niche(ctx, el, w, h, s, time, opts) {
+    const p = el.params || {};
+    const preset = V.presets[el.type] || {};
+    const isVitrine = opts && opts.vitrine;
+    const f = p.frameWidthCm > 0 ? Math.max(1, p.frameWidthCm * s) : 0;
+    const arch = !!p.archTop;
+    const ix = f, iy = f, iw = Math.max(0, w - 2 * f), ih = Math.max(0, h - 2 * f);
+
+    fillWith(ctx, (c) => shapePath(c, 0, 0, w, h, arch), () => {
+      if (f > 0) prim(ctx, el, 0, 0, w, h, s, time, 'frame');
+      fillWith(ctx, (c) => shapePath(c, ix, iy, iw, ih, arch), () => {
+        sec(ctx, el, ix, iy, iw, ih, s, time, 'back');
+        insetShadow(ctx, ix, iy, iw, ih, s);
+      });
+    });
+    if (iw < 2 || ih < 2) return;
+
+    const rand = rngFor(el, 'decor');
+    if (preset.propKind === 'logs') {
+      if (p.showProps) drawLogs(ctx, rand, ix, iy, iw, ih, s);
+      return;
+    }
+
+    const bays = autoBays(p, iw / s, isVitrine ? 50 : 999);
+    const rows = Math.max(1, (p.shelves || 0) + 1);
+    const plank = Math.max(1.2, 2.5 * s);
+    const divider = Math.max(1, Math.min(2.5 * s, f || 2 * s));
+    const archClearance = arch ? Math.min(iw / 2, ih) * 0.6 : 0; // keep shelves out of the arch crown
+    const usableTop = iy + archClearance;
+    const usableH = iy + ih - usableTop;
+    const colW = (iw - divider * (bays - 1)) / bays;
+
+    // vertical dividers
+    for (let b = 1; b < bays; b++) {
+      const dx = ix + b * colW + (b - 1) * divider;
+      fillWith(ctx, (c) => shapePath(c, ix, iy, iw, ih, arch), () => prim(ctx, el, dx, iy, divider, ih, s, time, 'div' + b));
+    }
+    // shelves + decor per compartment
+    const rowH = usableH / rows;
+    for (let r = 0; r < rows; r++) {
+      const floorY = usableTop + rowH * (r + 1) - (r < rows - 1 ? plank : 0);
+      if (r < rows - 1) {
+        prim(ctx, el, ix, floorY, iw, plank, s, time, 'shelf' + r);
+        const g = ctx.createLinearGradient(0, floorY + plank, 0, floorY + plank + 4 * s);
+        g.addColorStop(0, 'rgba(0,0,0,0.28)');
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(ix, floorY + plank, iw, 4 * s);
+      }
+      if (p.showProps) {
+        const bayTop = r === 0 ? usableTop : usableTop + rowH * r;
+        for (let b = 0; b < bays; b++) drawDecor(ctx, rand, ix + b * (colW + divider), floorY, colW, floorY - bayTop, s);
+      }
+    }
+
+    if (isVitrine) {
+      // glass doors with slim mullions + sheen, one per bay
+      const m = Math.max(1, 1.2 * s);
+      for (let b = 0; b < bays; b++) {
+        const dx = ix + b * (colW + divider), dw = colW;
+        fillWith(ctx, (c) => shapePath(c, ix, iy, iw, ih, arch), () => {
+          ctx.fillStyle = 'rgba(205,222,232,0.10)';
+          ctx.fillRect(dx, iy, dw, ih);
+          const sh = ctx.createLinearGradient(dx, iy, dx + dw, iy + ih * 0.6);
+          sh.addColorStop(0, 'rgba(255,255,255,0)');
+          sh.addColorStop(0.35, 'rgba(255,255,255,0.16)');
+          sh.addColorStop(0.45, 'rgba(255,255,255,0.03)');
+          sh.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.fillStyle = sh;
+          ctx.fillRect(dx, iy, dw, ih);
+          ctx.strokeStyle = U.rgba(U.shade(el.color, -0.2), 0.95);
+          ctx.lineWidth = m;
+          ctx.strokeRect(dx + m / 2, iy + m / 2, dw - m, ih - m);
+        });
+        drawHandle(ctx, p.handleStyle, dx, iy + ih * 0.35, dw, ih * 0.6, s, false, b % 2 === 0);
+      }
+    }
+  }
+
+  function cabinet(ctx, el, w, h, s, time) {
+    const p = el.params || {};
+    const top = Math.min(h * 0.4, (p.topSlabCm || 0) * s);
+    const plinth = Math.min(h * 0.4, (p.plinthHeightCm || 0) * s);
+    const bodyY = top, bodyH = Math.max(0, h - top - plinth);
+
+    // recessed plinth / legs
+    if (plinth > 0) {
+      const inset = Math.min(w * 0.08, 4 * s);
+      sec(ctx, el, inset, h - plinth, w - inset * 2, plinth, s, time, 'plinth');
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(inset, h - plinth, w - inset * 2, plinth);
+    }
+    // body fronts
+    prim(ctx, el, 0, bodyY, w, bodyH, s, time, 'body');
+    // top slab
+    if (top > 0) {
+      const over = Math.min(1.5 * s, w * 0.02);
+      sec(ctx, el, -over, 0, w + over * 2, top, s, time, 'top');
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.fillRect(-over, 0, w + over * 2, Math.max(1, 0.3 * s));
+      const g = ctx.createLinearGradient(0, top, 0, top + 3 * s);
+      g.addColorStop(0, 'rgba(0,0,0,0.3)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, top, w, 3 * s);
+    }
+    if (bodyH < 3) return;
+
+    // drawer rows on top, door bays below
+    const nDr = p.drawers || 0;
+    const bays = autoBays(p, w / s, 60);
+    let drawerH = nDr ? Math.min(20 * s, bodyH / nDr) : 0;
+    let doorsH = bodyH - drawerH * nDr;
+    if (doorsH < 8 * s) {
+      drawerH = nDr ? bodyH / nDr : 0;
+      doorsH = nDr ? 0 : bodyH;
+    }
+    const style = p.handleStyle || 'groove';
+    for (let d = 0; d < nDr; d++) {
+      const dy = bodyY + d * drawerH;
+      if (d > 0) seam(ctx, 0, dy, w, dy, el.color, s);
+      drawHandle(ctx, style, 0, dy, w, drawerH, s, true);
+    }
+    if (doorsH > 0) {
+      const dy = bodyY + nDr * drawerH;
+      if (nDr) seam(ctx, 0, dy, w, dy, el.color, s);
+      const bw = w / bays;
+      for (let b = 0; b < bays; b++) {
+        if (b > 0) seam(ctx, b * bw, dy, b * bw, dy + doorsH, el.color, s);
+        drawHandle(ctx, style, b * bw, dy, bw, doorsH, s, bays === 1 || doorsH < 18 * s, b % 2 === 0);
+      }
+    }
+    // body depth shading
+    const g = ctx.createLinearGradient(0, bodyY + bodyH - 2 * s, 0, bodyY + bodyH);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, 'rgba(0,0,0,0.22)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, bodyY + bodyH - 2 * s, w, 2 * s);
+  }
+
+  const PITCH = { fine: [2, 0.7], standard: [3, 1.2], wide: [6, 2] };
+  function cladding(ctx, el, w, h, s, time) {
+    const p = el.params || {};
+    sec(ctx, el, 0, 0, w, h, s, time, 'back');
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(0, 0, w, h);
+    let [slat, gap] = PITCH[p.slatPitch] || PITCH.standard;
+    slat *= s;
+    gap *= s;
+    if (slat + gap < 4) {
+      const k = 4 / (slat + gap);
+      slat *= k;
+      gap *= k;
+    }
+    const pitch = slat + gap;
+    const n = Math.ceil(w / pitch);
+    const off = (w - n * pitch + gap) / 2;
+    const rand = rngFor(el, 'slat');
+    for (let i = 0; i < n; i++) {
+      const x = off + i * pitch;
+      prim(ctx, el, x, 0, slat, h, s, time, 'slat' + (i % 7));
+      const g = ctx.createLinearGradient(x, 0, x + slat, 0);
+      g.addColorStop(0, 'rgba(255,255,255,0.14)');
+      g.addColorStop(0.35, 'rgba(255,255,255,0)');
+      g.addColorStop(1, `rgba(0,0,0,${0.22 + rand() * 0.08})`);
+      ctx.fillStyle = g;
+      ctx.fillRect(x, 0, slat, h);
+    }
+    const v = ctx.createLinearGradient(0, 0, 0, h);
+    v.addColorStop(0, 'rgba(0,0,0,0.12)');
+    v.addColorStop(0.15, 'rgba(0,0,0,0)');
+    v.addColorStop(0.9, 'rgba(0,0,0,0)');
+    v.addColorStop(1, 'rgba(0,0,0,0.16)');
+    ctx.fillStyle = v;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  function framed(ctx, el, w, h, s, time) {
+    const p = el.params || {};
+    const f = Math.max(0, (p.frameWidthCm || 0) * s);
+    const arch = !!p.archTop;
+    fillWith(ctx, (c) => shapePath(c, 0, 0, w, h, arch), () => {
+      sec(ctx, el, 0, 0, w, h, s, time, 'frame');
+      fillWith(ctx, (c) => shapePath(c, f, f, w - 2 * f, h - 2 * f, arch), () => prim(ctx, el, f, f, w - 2 * f, h - 2 * f, s, time, 'face'));
+    });
+    if (f > 0) {
+      ctx.save();
+      shapePath(ctx, f, f, w - 2 * f, h - 2 * f, arch);
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.lineWidth = Math.max(1, 0.4 * s);
+      ctx.stroke();
+      shapePath(ctx, 0.5, 0.5, w - 1, h - 1, arch);
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function fireplace(ctx, el, w, h, s, time) {
+    const p = el.params || {};
+    const f = Math.min(w / 4, h / 4, Math.max(0, (p.frameWidthCm || 0) * s));
+    if (f > 0) sec(ctx, el, 0, 0, w, h, s, time, 'surround');
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(f, f, w - 2 * f, h - 2 * f);
+    ctx.clip();
+    ctx.translate(f, f);
+    A.textures.paintSurface(ctx, Object.assign({}, el, { _bare: true }), w - 2 * f, h - 2 * f, s, time);
+    ctx.restore();
+  }
+
+  function panelGrid(ctx, el, w, h, s, time) {
+    const p = el.params || {};
+    sec(ctx, el, 0, 0, w, h, s, time, 'trim');
+    const cols = Math.max(1, p.bays || 2), rows = Math.max(1, p.shelves || 3);
+    const gap = Math.max(1, 0.8 * s);
+    const tw = (w - gap * (cols + 1)) / cols, th = (h - gap * (rows + 1)) / rows;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = gap + c * (tw + gap), y = gap + r * (th + gap);
+        prim(ctx, el, x, y, tw, th, s, time, 't' + ((r * cols + c) % 5));
+        const g = ctx.createRadialGradient(x + tw / 2, y + th / 2, Math.min(tw, th) * 0.2, x + tw / 2, y + th / 2, Math.max(tw, th) * 0.7);
+        g.addColorStop(0, 'rgba(255,255,255,0.06)');
+        g.addColorStop(1, 'rgba(0,0,0,0.22)');
+        ctx.fillStyle = g;
+        ctx.fillRect(x, y, tw, th);
+      }
+    }
+  }
+
+  /* ---------- silhouettes (seating, lighting, decor) ---------- */
+  const shapes = {
+    bench(ctx, el, w, h, s, t) {
+      fillWith(ctx, (c) => c.rect(w * 0.03, h * 0.38, w * 0.94, h * 0.62), () => sec(ctx, el, 0, 0, w, h, s, t, 'base'));
+      fillWith(ctx, (c) => roundRect(c, 0, 0, w, h * 0.42, 4 * s), () => prim(ctx, el, 0, 0, w, h * 0.42, s, t, 'cush'));
+    },
+    lounge(ctx, el, w, h, s, t) {
+      const legH = h * 0.14;
+      fillWith(ctx, (c) => {
+        c.beginPath();
+        c.rect(w * 0.1, h - legH, Math.max(1, 2 * s), legH);
+        c.rect(w * 0.9 - 2 * s, h - legH, Math.max(1, 2 * s), legH);
+      }, () => sec(ctx, el, 0, 0, w, h, s, t, 'legs'));
+      fillWith(ctx, (c) => roundRect(c, w * 0.14, 0, w * 0.72, h * 0.66, 10 * s), () => prim(ctx, el, 0, 0, w, h, s, t, 'back'));
+      fillWith(ctx, (c) => roundRect(c, w * 0.04, h * 0.48, w * 0.92, h * 0.38, 8 * s), () => prim(ctx, el, 0, 0, w, h, s, t, 'seat'));
+      for (const ax of [0, w * 0.82]) fillWith(ctx, (c) => roundRect(c, ax, h * 0.3, w * 0.18, h * 0.56, 7 * s), () => prim(ctx, el, 0, 0, w, h, s, t, 'arm'));
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      ctx.fillRect(w * 0.18, h * 0.48, w * 0.64, Math.max(1, 0.5 * s));
+    },
+    chair(ctx, el, w, h, s, t) {
+      const leg = Math.max(1, 1.6 * s);
+      fillWith(ctx, (c) => {
+        c.beginPath();
+        c.rect(w * 0.12, h * 0.55, leg, h * 0.45);
+        c.rect(w * 0.88 - leg, h * 0.55, leg, h * 0.45);
+      }, () => sec(ctx, el, 0, 0, w, h, s, t, 'legs'));
+      fillWith(ctx, (c) => roundRect(c, w * 0.16, 0, w * 0.68, h * 0.5, 5 * s), () => prim(ctx, el, 0, 0, w, h, s, t, 'back'));
+      fillWith(ctx, (c) => roundRect(c, w * 0.04, h * 0.5, w * 0.92, h * 0.12, 3 * s), () => prim(ctx, el, 0, 0, w, h, s, t, 'seat'));
+    },
+    sofa(ctx, el, w, h, s, t) {
+      fillWith(ctx, (c) => c.rect(w * 0.04, h * 0.88, w * 0.92, h * 0.12), () => sec(ctx, el, 0, 0, w, h, s, t, 'base'));
+      fillWith(ctx, (c) => roundRect(c, w * 0.04, 0, w * 0.92, h * 0.6, 6 * s), () => prim(ctx, el, 0, 0, w, h, s, t, 'back'));
+      const armW = Math.min(22 * s, w * 0.1);
+      const seatX = armW, seatW = w - armW * 2, n = 3;
+      for (let i = 0; i < n; i++) {
+        const cx = seatX + (seatW / n) * i;
+        fillWith(ctx, (c) => roundRect(c, cx + 0.5 * s, h * 0.5, seatW / n - 1 * s, h * 0.38, 5 * s), () => prim(ctx, el, 0, 0, w, h, s, t, 'c' + i));
+      }
+      for (const ax of [0, w - armW]) fillWith(ctx, (c) => roundRect(c, ax, h * 0.3, armW, h * 0.58, 6 * s), () => prim(ctx, el, 0, 0, w, h, s, t, 'arm'));
+    },
+    floorLamp(ctx, el, w, h, s, t) {
+      const pole = Math.max(1, 1.2 * s), cx = w / 2;
+      fillWith(ctx, (c) => {
+        c.beginPath();
+        c.rect(cx - pole / 2, h * 0.26, pole, h * 0.72);
+        c.rect(w * 0.25, h - Math.max(1.5, 2 * s), w * 0.5, Math.max(1.5, 2 * s));
+      }, () => prim(ctx, el, 0, 0, w, h, s, t, 'pole'));
+      fillWith(ctx, (c) => {
+        c.beginPath();
+        c.moveTo(w * 0.2, 0);
+        c.lineTo(w * 0.8, 0);
+        c.lineTo(w, h * 0.27);
+        c.lineTo(0, h * 0.27);
+        c.closePath();
+      }, () => {
+        sec(ctx, el, 0, 0, w, h * 0.27, s, t, 'shade');
+        ctx.fillStyle = 'rgba(255,200,120,0.22)';
+        ctx.fillRect(0, 0, w, h * 0.27);
+      });
+    },
+    tableLamp(ctx, el, w, h, s, t) {
+      fillWith(ctx, (c) => {
+        c.beginPath();
+        c.ellipse(w / 2, h * 0.72, w * 0.32, h * 0.28, 0, 0, Math.PI * 2);
+      }, () => prim(ctx, el, 0, 0, w, h, s, t, 'base'));
+      fillWith(ctx, (c) => {
+        c.beginPath();
+        c.moveTo(w * 0.22, 0);
+        c.lineTo(w * 0.78, 0);
+        c.lineTo(w, h * 0.45);
+        c.lineTo(0, h * 0.45);
+        c.closePath();
+      }, () => {
+        sec(ctx, el, 0, 0, w, h * 0.45, s, t, 'shade');
+        ctx.fillStyle = 'rgba(255,200,120,0.25)';
+        ctx.fillRect(0, 0, w, h * 0.45);
+      });
+    },
+    pendant(ctx, el, w, h, s, t) {
+      ctx.fillStyle = U.shade(el.color, -0.2);
+      ctx.fillRect(w / 2 - 0.5, 0, 1, h * 0.62);
+      fillWith(ctx, (c) => roundRect(c, 0, h * 0.62, w, h * 0.34, 1.5 * s), () => prim(ctx, el, 0, 0, w, h, s, t, 'shade'));
+      fillWith(ctx, (c) => c.rect(w * 0.08, h * 0.95, w * 0.84, h * 0.05), () => {
+        ctx.fillStyle = el.secondaryColor || '#f0e0c0';
+        ctx.fillRect(0, 0, w, h);
+      });
+    },
+    turntable(ctx, el, w, h, s, t) {
+      fillWith(ctx, (c) => c.rect(0, h * 0.4, w, h * 0.6), () => prim(ctx, el, 0, 0, w, h, s, t, 'plinth'));
+      fillWith(ctx, (c) => c.rect(w * 0.08, h * 0.25, w * 0.6, h * 0.15), () => {
+        ctx.fillStyle = '#141414';
+        ctx.fillRect(0, 0, w, h);
+      });
+      ctx.strokeStyle = el.secondaryColor || '#b2b6ba';
+      ctx.lineWidth = Math.max(1, 0.5 * s);
+      ctx.beginPath();
+      ctx.moveTo(w * 0.85, h * 0.4);
+      ctx.lineTo(w * 0.85, h * 0.1);
+      ctx.lineTo(w * 0.55, h * 0.22);
+      ctx.stroke();
+    },
+    decor(ctx, el, w, h, s, t) {
+      const rand = rngFor(el, 'decor');
+      let y = h;
+      for (let i = 0; i < 3; i++) {
+        const bh = (3 + rand() * 2) * s, bw = w * (0.5 - i * 0.05);
+        ctx.fillStyle = i === 0 ? el.color : BOOK_PALETTE[Math.floor(rand() * BOOK_PALETTE.length)];
+        ctx.fillRect(w * 0.02 + i * 1.2 * s, y - bh, bw, bh);
+        y -= bh;
+      }
+      const vw = w * 0.22, vh = h * 0.7;
+      ctx.fillStyle = el.secondaryColor || '#7d6b5d';
+      ctx.beginPath();
+      ctx.ellipse(w * 0.8, h - vh / 2, vw / 2, vh / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#8c7a5c';
+      ctx.lineWidth = Math.max(0.5, 0.3 * s);
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(w * 0.8, h - vh);
+        ctx.quadraticCurveTo(w * (0.7 + rand() * 0.25), h * 0.2, w * (0.62 + rand() * 0.36), -h * 0.3);
+        ctx.stroke();
+      }
+    },
+    plant(ctx, el, w, h, s, t) {
+      const potH = h * 0.32;
+      fillWith(ctx, (c) => {
+        c.beginPath();
+        c.moveTo(w * 0.15, h - potH);
+        c.lineTo(w * 0.85, h - potH);
+        c.lineTo(w * 0.75, h);
+        c.lineTo(w * 0.25, h);
+        c.closePath();
+      }, () => prim(ctx, el, 0, 0, w, h, s, t, 'pot'));
+      const rand = rngFor(el, 'leaf');
+      const leaf = el.secondaryColor || '#5f6e52';
+      ctx.strokeStyle = U.shade(leaf, -0.4);
+      ctx.lineWidth = Math.max(0.6, 0.4 * s);
+      ctx.beginPath();
+      ctx.moveTo(w / 2, h - potH);
+      ctx.lineTo(w / 2, h * 0.15);
+      ctx.stroke();
+      for (let i = 0; i < 46; i++) {
+        const lx = w * (0.1 + rand() * 0.8), ly = h * (0.02 + rand() * 0.62);
+        ctx.fillStyle = U.shade(leaf, (rand() - 0.5) * 0.35);
+        ctx.beginPath();
+        ctx.ellipse(lx, ly, (3 + rand() * 3) * s, (1.6 + rand() * 1.4) * s, rand() * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    },
+  };
+  function silhouette(ctx, el, w, h, s, time) {
+    const shape = (V.presets[el.type] || {}).shape;
+    (shapes[shape] || shapes.bench)(ctx, el, w, h, s, time);
+  }
+
+  const painters = {
+    niche,
+    vitrine: (ctx, el, w, h, s, t) => niche(ctx, el, w, h, s, t, { vitrine: true }),
+    cabinet,
+    cladding,
+    framed,
+    fireplace,
+    panelGrid,
+    silhouette,
+  };
+
+  A.parts = {
+    /** Archetype id for an element ('plain' when it has no multi-part painter). */
+    archetypeOf(el) {
+      const a = (V.presets[el.type] || {}).archetype;
+      return a && painters[a] ? a : 'plain';
+    },
+    /** Returns true when it painted the element (caller falls back to the plain texture otherwise). */
+    paint(ctx, el, w, h, s, time) {
+      const a = A.parts.archetypeOf(el);
+      if (a === 'plain') return false;
+      painters[a](ctx, el, w, h, s, time || 0);
+      return true;
+    },
+  };
 })();
 </script>
 <script>
@@ -4985,11 +6105,14 @@ html, body {
       const r = T.rect(el);
       if (el.ledHalo) drawHalo(ctx, el, r, T, o);
       A.textures.draw(ctx, el, r, textureOpts);
-      ctx.save();
-      ctx.strokeStyle = U.rgba(U.shade(el.color, -0.6), 0.55);
-      ctx.lineWidth = 1;
-      ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
-      ctx.restore();
+      const arche = A.parts ? A.parts.archetypeOf(el) : 'plain';
+      if (arche !== 'silhouette' && !(el.params && el.params.archTop)) {
+        ctx.save();
+        ctx.strokeStyle = U.rgba(U.shade(el.color, -0.6), 0.55);
+        ctx.lineWidth = 1;
+        ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
+        ctx.restore();
+      }
       if (el.ledUnderglow) drawUnderglow(ctx, el, r, T);
     }
     ctx.restore();
@@ -7138,7 +8261,47 @@ html, body {
 
   function describeElement(el, state) {
     const m = V.moods[state.mood] || V.moods.japandi;
-    const materialPhrase = (m.materials && m.materials[el.texture]) || (V.textures[el.texture] && V.textures[el.texture].phrase) || 'architectural finish';
+    const preset = V.presets[el.type];
+    const arche = (V.archetypes && V.archetypes[(preset && preset.archetype) || 'plain']) || { zones: {} };
+
+    // Primary material phrase (incorporates named palette swatch if selected)
+    let primaryMat = '';
+    if (el.colorId && V.swatchIndex && V.swatchIndex[el.colorId]) {
+      const sw = V.swatchIndex[el.colorId];
+      const texN = (V.textureNoun && V.textureNoun[el.texture]) || el.texture;
+      primaryMat = `${texN} in ${sw.phrase}`;
+    } else {
+      primaryMat = (m.materials && m.materials[el.texture]) || (V.textures[el.texture] && V.textures[el.texture].phrase) || 'architectural finish';
+    }
+
+    // Secondary material phrase (if applicable)
+    let secondaryMat = '';
+    if (el.secondaryTexture && arche.zones && arche.zones.secondary) {
+      const secLabel = arche.zones.secondary.toLowerCase();
+      let phrase = '';
+      if (el.secondaryColorId && V.swatchIndex && V.swatchIndex[el.secondaryColorId]) {
+        const sw2 = V.swatchIndex[el.secondaryColorId];
+        const texN2 = (V.textureNoun && V.textureNoun[el.secondaryTexture]) || el.secondaryTexture;
+        phrase = `${texN2} in ${sw2.phrase}`;
+      } else {
+        phrase = (m.materials && m.materials[el.secondaryTexture]) || (V.textures[el.secondaryTexture] && V.textures[el.secondaryTexture].phrase) || el.secondaryTexture;
+      }
+      secondaryMat = `, with ${secLabel} in ${phrase}`;
+    }
+
+    // Structural parameters
+    const p = el.params || {};
+    const paramDetails = [];
+    if (p.archTop) paramDetails.push('featuring an architectural arched top');
+    if (p.shelves > 0) paramDetails.push(`${p.shelves} horizontal shelves`);
+    if (p.drawers > 0) paramDetails.push(`${p.drawers} drawer row${p.drawers > 1 ? 's' : ''}`);
+    if (p.bays > 0) paramDetails.push(`${p.bays} vertical door bays`);
+    if (p.topSlabCm > 0) paramDetails.push(`${Math.round(p.topSlabCm)}cm countertop slab`);
+    if (p.plinthHeightCm > 0) paramDetails.push(`resting on a ${Math.round(p.plinthHeightCm)}cm recessed plinth`);
+    if (p.handleStyle && V.handlePhrase && V.handlePhrase[p.handleStyle]) {
+      paramDetails.push(V.handlePhrase[p.handleStyle]);
+    }
+    const paramStr = paramDetails.length ? ` (${paramDetails.join(', ')})` : '';
 
     let spatialPrefix = '';
     const vZone = getVerticalZone(el, state.wallHeight);
@@ -7166,11 +8329,9 @@ html, body {
 
     const w = Math.round(el.width);
     const h = Math.round(el.height);
-    const preset = V.presets[el.type];
     const noun = (preset && preset.noun) || el.label.toLowerCase();
-    const detailDesc = preset && preset.description ? ` (${preset.description})` : '';
 
-    return `${spatialPrefix} a ${w}cm wide by ${h}cm high ${noun}: finished in ${materialPhrase}${detailDesc}${ledDesc}.`;
+    return `${spatialPrefix} a ${w}cm wide by ${h}cm high ${noun}${paramStr}: finished in ${primaryMat}${secondaryMat}${ledDesc}.`;
   }
 
   function describeElements(state) {
@@ -7199,7 +8360,10 @@ html, body {
     const hasFabric = state.elements.some((e) => e.texture === 'fabric');
     const hasMirror = state.elements.some((e) => e.texture === 'mirror');
 
-    const hasCredenza = state.elements.some((e) => e.type.includes('credenza') || e.type.includes('bench') || e.type === 'upper' || e.type === 'tower_vert');
+    const hasCredenza = state.elements.some((e) => e.type.includes('credenza') || e.type.includes('bench') || e.type === 'upper' || e.type === 'tower_vert' || e.type.includes('sideboard') || e.type.includes('drawer') || e.type.includes('desk'));
+    const hasVitrine = state.elements.some((e) => e.type.includes('vitrine'));
+    const hasSeating = state.elements.some((e) => e.type.includes('chair') || e.type.includes('sofa') || (V.presets[e.type] && V.presets[e.type].category === 'seating'));
+    const hasLamps = state.elements.some((e) => e.type.includes('lamp') || e.type.includes('pendant'));
     const hasTv = state.elements.some((e) => e.type.startsWith('tv') || e.type.startsWith('screen') || e.texture === 'glass');
     const hasSoundbar = state.elements.some((e) => e.type === 'soundbar' || e.type === 'speaker_inwall' || e.type === 'subwoofer' || e.type === 'av_bay');
     const hasFireplace = state.elements.some((e) => e.type.includes('fireplace') || e.type.includes('hearth'));
@@ -7265,6 +8429,18 @@ html, body {
     if (hasFireplace) {
       const fireMat = (m.materials && m.materials.fireplace) || 'frameless linear electric fireplace';
       craftBulletPoints.push(`- Fireplace & Hearth: Flush integrated ${fireMat} with warm glowing ember bed and realistic soft flame ribbons, complemented by a cantilevered monolithic stone hearth bench.`);
+    }
+
+    if (hasVitrine) {
+      craftBulletPoints.push(`- Glass Vitrine Display: Slender-framed glass curio display cabinetry with warm interior shelf illumination showcasing curated ceramic vessels and art objects behind clear glass doors.`);
+    }
+
+    if (hasSeating) {
+      craftBulletPoints.push(`- Seating & Living Room Scale: Contemporary upholstered seating silhouettes (bouclé or linen upholstery on solid timber or blackened steel frames) providing authentic living room proportion and human scale.`);
+    }
+
+    if (hasLamps) {
+      craftBulletPoints.push(`- Decorative Accent Lighting: Architectural brass and carved stone accent lamps with warm glowing fabric shades and suspended minimalist ceiling pendants adding layered warm illumination.`);
     }
 
     if (hasProps) {
@@ -8893,6 +10069,8 @@ html, body {
   let leftSidebar, rightSidebar, stageToolbar;
   let activePresetCat = 'all';
   let presetFilterText = '';
+  let activeInspectorZone = 'primary';
+  let activePaletteFam = null;
 
   function init() {
     leftSidebar = document.getElementById('sidebar-left');
@@ -9543,17 +10721,170 @@ html, body {
       secTvErgo.appendChild(btnAlign);
     }
 
-    // Materials / Textures Picker
+    // Archetype & Multi-part definitions
+    const preset = V.presets[el.type] || {};
+    const arche = (V.archetypes && V.archetypes[preset.archetype || 'plain']) || { zones: {}, controls: [] };
+    const hasSecondary = !!(arche.zones && arche.zones.secondary);
+    if (!hasSecondary) activeInspectorZone = 'primary';
+
+    // Component Structure & Parametric Geometry
+    let secStructure = null;
+    const controls = arche.controls || [];
+    if (controls.length > 0) {
+      secStructure = U.h('div', { class: 'sidebar-section' });
+      secStructure.appendChild(U.h('div', { class: 'section-heading' }, 'Component Structure & Geometry'));
+
+      const setParam = (key, val) => {
+        const params = Object.assign({}, el.params, { [key]: val });
+        mutateEl(el.id, { params });
+        A.canvas.requestRedraw();
+      };
+      const p = el.params || {};
+
+      const numFields = [];
+      if (controls.includes('shelves')) numFields.push(makeNumField('Shelves (Rows)', p.shelves || 0, (v) => setParam('shelves', Math.max(0, Math.min(8, Math.round(v))))));
+      if (controls.includes('bays')) numFields.push(makeNumField('Door Bays / Cols (0=auto)', p.bays || 0, (v) => setParam('bays', Math.max(0, Math.min(6, Math.round(v))))));
+      if (controls.includes('drawers')) numFields.push(makeNumField('Drawer Rows', p.drawers || 0, (v) => setParam('drawers', Math.max(0, Math.min(4, Math.round(v))))));
+      if (controls.includes('topSlabCm')) numFields.push(makeNumField('Top Slab (cm)', p.topSlabCm || 0, (v) => setParam('topSlabCm', Math.max(0, Math.min(15, v)))));
+      if (controls.includes('plinthHeightCm')) numFields.push(makeNumField('Plinth / Legs (cm)', p.plinthHeightCm || 0, (v) => setParam('plinthHeightCm', Math.max(0, Math.min(20, v)))));
+      if (controls.includes('frameWidthCm')) numFields.push(makeNumField('Frame Thickness (cm)', p.frameWidthCm !== undefined ? p.frameWidthCm : 3, (v) => setParam('frameWidthCm', Math.max(0, Math.min(12, v)))));
+
+      for (let i = 0; i < numFields.length; i += 2) {
+        const row = U.h('div', { class: 'form-row' });
+        row.appendChild(numFields[i]);
+        if (numFields[i + 1]) row.appendChild(numFields[i + 1]);
+        secStructure.appendChild(row);
+      }
+
+      if (controls.includes('handleStyle')) {
+        const rowHandle = U.h('div', { class: 'form-field', style: { marginTop: '4px' } });
+        rowHandle.appendChild(U.h('label', { class: 'form-label' }, 'Handle Style'));
+        const handleSelect = U.h(
+          'select',
+          {
+            class: 'select',
+            onchange: (e) => setParam('handleStyle', e.target.value),
+          },
+          U.h('option', { value: 'none', selected: p.handleStyle === 'none' }, 'Push-Latch (Handleless)'),
+          U.h('option', { value: 'groove', selected: p.handleStyle === 'groove' || !p.handleStyle }, 'Shadowline Finger Groove'),
+          U.h('option', { value: 'bar_brass', selected: p.handleStyle === 'bar_brass' }, 'Brushed Brass Bar Handle'),
+          U.h('option', { value: 'bar_black', selected: p.handleStyle === 'bar_black' }, 'Matte Black Bar Handle'),
+          U.h('option', { value: 'knob', selected: p.handleStyle === 'knob' }, 'Minimalist Knob Pull')
+        );
+        rowHandle.appendChild(handleSelect);
+        secStructure.appendChild(rowHandle);
+      }
+
+      if (controls.includes('slatPitch')) {
+        const rowPitch = U.h('div', { class: 'form-field', style: { marginTop: '4px' } });
+        rowPitch.appendChild(U.h('label', { class: 'form-label' }, 'Slat Pitch / Width'));
+        const pitchSelect = U.h(
+          'select',
+          {
+            class: 'select',
+            onchange: (e) => setParam('slatPitch', e.target.value),
+          },
+          U.h('option', { value: 'fine', selected: p.slatPitch === 'fine' }, 'Fine Micro-Slats (2cm)'),
+          U.h('option', { value: 'standard', selected: p.slatPitch === 'standard' || !p.slatPitch }, 'Standard Slats (4cm)'),
+          U.h('option', { value: 'wide', selected: p.slatPitch === 'wide' }, 'Wide Slat Planks (8cm)')
+        );
+        rowPitch.appendChild(pitchSelect);
+        secStructure.appendChild(rowPitch);
+      }
+
+      if (controls.includes('archTop')) {
+        const chkArch = U.h(
+          'label',
+          { style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--fs-xs)', cursor: 'pointer', marginTop: '6px' } },
+          U.h('input', {
+            type: 'checkbox',
+            checked: !!p.archTop,
+            onchange: (e) => setParam('archTop', e.target.checked),
+          }),
+          'Architectural Arched Top'
+        );
+        secStructure.appendChild(chkArch);
+      }
+
+      if (controls.includes('showProps')) {
+        const chkProps = U.h(
+          'label',
+          { style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--fs-xs)', cursor: 'pointer', marginTop: '6px' } },
+          U.h('input', {
+            type: 'checkbox',
+            checked: p.showProps !== false,
+            onchange: (e) => setParam('showProps', e.target.checked),
+          }),
+          'Styled Interior Decor (Books, Ceramics)'
+        );
+        secStructure.appendChild(chkProps);
+      }
+    }
+
+    // Materials / Textures / Swatches Picker
     const secMat = U.h('div', { class: 'sidebar-section' });
-    secMat.appendChild(U.h('div', { class: 'section-heading' }, 'Material Texture'));
+    secMat.appendChild(U.h('div', { class: 'section-heading' }, 'Materials & Finishes'));
+
+    if (hasSecondary) {
+      const zoneTabs = U.h('div', { class: 'mat-zone-tabs' });
+      const tabPrim = U.h(
+        'button',
+        {
+          class: `mat-zone-tab ${activeInspectorZone === 'primary' ? 'active' : ''}`,
+          onclick: () => {
+            activeInspectorZone = 'primary';
+            renderInspector();
+          },
+        },
+        `Primary: ${arche.zones.primary || 'Body'}`
+      );
+      const tabSec = U.h(
+        'button',
+        {
+          class: `mat-zone-tab ${activeInspectorZone === 'secondary' ? 'active' : ''}`,
+          onclick: () => {
+            activeInspectorZone = 'secondary';
+            renderInspector();
+          },
+        },
+        `Secondary: ${arche.zones.secondary || 'Trim'}`
+      );
+      zoneTabs.appendChild(tabPrim);
+      zoneTabs.appendChild(tabSec);
+      secMat.appendChild(zoneTabs);
+    }
+
+    const isSecondary = hasSecondary && activeInspectorZone === 'secondary';
+    const curTex = isSecondary ? (el.secondaryTexture || el.texture) : el.texture;
+    const curColor = isSecondary ? (el.secondaryColor || '#b08d66') : el.color;
+    const curColorId = isSecondary ? el.secondaryColorId : el.colorId;
+
+    secMat.appendChild(U.h('div', { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)', marginBottom: '6px', fontWeight: '500' } },
+      `Texture Surface (${isSecondary ? arche.zones.secondary : (arche.zones.primary || 'Main')})`
+    ));
+
     const texGrid = U.h('div', { class: 'texture-picker-grid' });
     for (const [tId, tObj] of Object.entries(V.textures)) {
-      const isAct = el.texture === tId;
+      const isAct = curTex === tId;
       const tile = U.h(
         'button',
         {
           class: `texture-tile ${isAct ? 'active' : ''}`,
-          onclick: () => mutateEl(el.id, { texture: tId, color: isAct ? el.color : tObj.defaultColor }),
+          onclick: () => {
+            if (isSecondary) {
+              mutateEl(el.id, {
+                secondaryTexture: tId,
+                secondaryColor: isAct ? curColor : tObj.defaultColor,
+                secondaryColorId: null,
+              });
+            } else {
+              mutateEl(el.id, {
+                texture: tId,
+                color: isAct ? curColor : tObj.defaultColor,
+                colorId: null,
+              });
+            }
+          },
         },
         tObj.label
       );
@@ -9561,27 +10892,99 @@ html, body {
     }
     secMat.appendChild(texGrid);
 
-    // Color & Opacity
-    const rowColor = U.h('div', { class: 'form-row', style: { alignItems: 'center', marginTop: '6px' } });
-    rowColor.appendChild(
-      U.h(
-        'div',
-        { class: 'form-field' },
-        U.h('label', { class: 'form-label' }, 'Base Color'),
-        U.h('input', {
-          type: 'color',
-          class: 'input',
-          style: { height: '36px', padding: '2px', cursor: 'pointer' },
-          value: el.color,
-          oninput: (e) => mutateEl(el.id, { color: e.target.value }),
-        })
-      )
+    // Curated Swatch Palette Section
+    secMat.appendChild(U.h('div', { style: { fontSize: 'var(--fs-xs)', color: 'var(--text-2)', marginTop: '12px', marginBottom: '6px', fontWeight: '500' } },
+      'Curated Architectural Finishes'
+    ));
+
+    const curSwatch = curColorId && V.swatchIndex && V.swatchIndex[curColorId];
+    const swatchLabel = curSwatch ? curSwatch.label : `Custom Tint (${curColor.toUpperCase()})`;
+    const activeLabelDiv = U.h('div', { class: 'swatch-active-label' },
+      U.h('span', { class: 'swatch-active-dot', style: { background: curColor } }),
+      U.h('span', null, swatchLabel)
     );
-    rowColor.appendChild(
-      U.h(
-        'div',
-        { class: 'form-field' },
-        U.h('label', { class: 'form-label' }, `Opacity (${Math.round(el.opacity * 100)}%)`),
+    secMat.appendChild(activeLabelDiv);
+
+    const famTabs = U.h('div', { class: 'palette-family-tabs' });
+    const effectiveFam = activePaletteFam || (V.textureFamily && V.textureFamily[curTex]) || 'woods';
+
+    const palettes = V.palettes || {};
+    for (const [fKey, fObj] of Object.entries(palettes)) {
+      const tab = U.h(
+        'button',
+        {
+          class: `palette-fam-tab ${effectiveFam === fKey ? 'active' : ''}`,
+          onclick: () => {
+            activePaletteFam = fKey;
+            renderInspector();
+          },
+        },
+        fObj.label
+      );
+      famTabs.appendChild(tab);
+    }
+    const tabCustom = U.h(
+      'button',
+      {
+        class: `palette-fam-tab ${effectiveFam === 'custom' ? 'active' : ''}`,
+        onclick: () => {
+          activePaletteFam = 'custom';
+          renderInspector();
+        },
+      },
+      '🎨 Custom Hex'
+    );
+    famTabs.appendChild(tabCustom);
+    secMat.appendChild(famTabs);
+
+    if (effectiveFam !== 'custom' && palettes[effectiveFam]) {
+      const swatchGrid = U.h('div', { class: 'swatch-grid' });
+      for (const sw of palettes[effectiveFam].swatches) {
+        const isSwAct = curColorId === sw.id || curColor.toLowerCase() === sw.hex.toLowerCase();
+        const chip = U.h('button', {
+          class: `swatch-chip ${isSwAct ? 'active' : ''}`,
+          style: { background: sw.hex },
+          title: `${sw.label} (${sw.phrase})`,
+          onclick: () => {
+            if (isSecondary) {
+              mutateEl(el.id, { secondaryColor: sw.hex, secondaryColorId: sw.id });
+            } else {
+              mutateEl(el.id, { color: sw.hex, colorId: sw.id });
+            }
+          },
+        });
+        swatchGrid.appendChild(chip);
+      }
+      secMat.appendChild(swatchGrid);
+    } else {
+      const rowColor = U.h('div', { class: 'form-row', style: { alignItems: 'center', marginTop: '6px' } });
+      rowColor.appendChild(
+        U.h(
+          'div',
+          { class: 'form-field' },
+          U.h('label', { class: 'form-label' }, 'Custom Color (Hex)'),
+          U.h('input', {
+            type: 'color',
+            class: 'input',
+            style: { height: '36px', padding: '2px', cursor: 'pointer' },
+            value: curColor,
+            oninput: (e) => {
+              if (isSecondary) {
+                mutateEl(el.id, { secondaryColor: e.target.value, secondaryColorId: null });
+              } else {
+                mutateEl(el.id, { color: e.target.value, colorId: null });
+              }
+            },
+          })
+        )
+      );
+      secMat.appendChild(rowColor);
+    }
+
+    if (!isSecondary) {
+      const rowOp = U.h('div', { class: 'form-field', style: { marginTop: '8px' } });
+      rowOp.appendChild(U.h('label', { class: 'form-label' }, `Layer Opacity (${Math.round(el.opacity * 100)}%)`));
+      rowOp.appendChild(
         U.h('input', {
           type: 'range',
           min: '0.1',
@@ -9590,9 +10993,9 @@ html, body {
           value: el.opacity,
           oninput: (e) => mutateEl(el.id, { opacity: parseFloat(e.target.value) }),
         })
-      )
-    );
-    secMat.appendChild(rowColor);
+      );
+      secMat.appendChild(rowOp);
+    }
 
     // LED Lighting Modifiers
     const secLed = U.h('div', { class: 'sidebar-section' });
@@ -9660,16 +11063,12 @@ html, body {
       },
     });
     secAiPrompt.appendChild(U.h('div', { class: 'section-heading', style: { color: 'var(--cyan)', marginBottom: '4px' } }, '✨ AI Prompt Representation'));
-    const pPreset = V.presets[el.type];
-    const pMood = V.moods[A.store.getState().mood];
-    const pTexDesc = (pMood && pMood.materials && pMood.materials[el.texture]) || (V.textures[el.texture] && V.textures[el.texture].phrase) || 'architectural finish';
-    const pObjDesc = (pPreset && pPreset.description) || `${el.label} custom component.`;
+    const promptSentence = A.prompt && A.prompt.describeElement ? A.prompt.describeElement(el, A.store.getState()) : `${el.label} custom component.`;
     secAiPrompt.appendChild(
       U.h('div', { style: { fontSize: '11px', color: 'var(--text-1)', lineHeight: '1.45', fontStyle: 'italic' } },
-        `"${pObjDesc} Finished in ${pTexDesc}."`
+        `"${promptSentence}"`
       )
     );
-    rightSidebar.appendChild(secAiPrompt);
 
     // Layer & Actions
     const secActions = U.h('div', { class: 'sidebar-section' });
@@ -9728,8 +11127,10 @@ html, body {
     rightSidebar.appendChild(secHeader);
     rightSidebar.appendChild(secDims);
     if (secTvErgo) rightSidebar.appendChild(secTvErgo);
+    if (secStructure) rightSidebar.appendChild(secStructure);
     rightSidebar.appendChild(secMat);
     rightSidebar.appendChild(secLed);
+    rightSidebar.appendChild(secAiPrompt);
     rightSidebar.appendChild(secActions);
   }
 
