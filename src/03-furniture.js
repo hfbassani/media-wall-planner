@@ -350,6 +350,64 @@
       noun: 'curated console decor arrangement',
       description: 'A curated stack of coffee-table art books beside a sculptural ceramic vessel with dried botanicals.',
     },
+
+    // Gaming & AV Electronics
+    console_ps5: {
+      label: 'PlayStation 5', category: 'electronics', width: 39, height: 11, y: 63,
+      archetype: 'silhouette', shape: 'ps5', texture: 'matte', color: '#f5f5f7', colorId: 'chalk_white',
+      secondaryTexture: 'metal', secondaryColor: '#121316', secondaryColorId: 'onyx_black',
+      noun: 'Sony PlayStation 5 gaming console',
+      description: 'A sleek white Sony PlayStation 5 console resting horizontally with sculpted outer wing plates and a subtle glowing cyan power accent strip.',
+    },
+    console_xbox: {
+      label: 'Xbox Series X', category: 'electronics', width: 15, height: 30, y: 63,
+      archetype: 'silhouette', shape: 'xbox', texture: 'matte', color: '#1a1a1c', colorId: 'onyx_black',
+      secondaryTexture: 'metal', secondaryColor: '#107c10',
+      noun: 'Xbox Series X gaming console',
+      description: 'A minimalist matte black monolithic Xbox Series X vertical gaming tower with concave top ventilation grid illuminated with subtle green glow.',
+    },
+    console_switch: {
+      label: 'Nintendo Switch OLED', category: 'electronics', width: 24, height: 10, y: 63,
+      archetype: 'silhouette', shape: 'switch', texture: 'matte', color: '#232427', colorId: 'anthracite',
+      secondaryTexture: 'matte', secondaryColor: '#f0f0f2', secondaryColorId: 'chalk_white',
+      noun: 'Nintendo Switch OLED console in charging dock',
+      description: 'A compact Nintendo Switch OLED console docked neatly in its rounded charging cradle.',
+    },
+    receiver_av: {
+      label: 'AV Receiver', category: 'electronics', width: 44, height: 17, y: 63,
+      archetype: 'silhouette', shape: 'receiver', texture: 'metal', color: '#1c1e22', colorId: 'black_steel',
+      secondaryTexture: 'metal', secondaryColor: '#00d2ff',
+      noun: 'audiophile AV surround sound receiver',
+      description: 'A premium brushed dark steel home theater AV receiver with twin precision rotary dials, headphone jack, and illuminated amber/cyan dot-matrix display window.',
+    },
+    pc_gaming_tower: {
+      label: 'Gaming PC Tower', category: 'electronics', width: 22, height: 46, y: 63,
+      archetype: 'silhouette', shape: 'pcTower', texture: 'metal', color: '#1c1d21', colorId: 'gunmetal',
+      secondaryTexture: 'glass', secondaryColor: '#8a63d2',
+      noun: 'custom architectural gaming PC mid-tower',
+      description: 'A custom anodized aluminium gaming PC tower with a dark tinted tempered glass side panel showcasing clean, subtly illuminated internal liquid cooling and hardware.',
+    },
+    monitor_curved: {
+      label: '34" Curved Monitor', category: 'electronics', width: 81, height: 46, y: 63,
+      archetype: 'silhouette', shape: 'monitor', texture: 'metal', color: '#151618', colorId: 'black_steel',
+      secondaryTexture: 'metal', secondaryColor: '#b2b6ba', secondaryColorId: 'brushed_nickel',
+      noun: '34-inch curved ultrawide 21:9 monitor',
+      description: 'A 34-inch 21:9 curved ultrawide desktop monitor with ultra-thin bezels mounted on a sculptural brushed aluminum desk stand.',
+    },
+    electronics_streamer: {
+      label: 'Streaming Media Box', category: 'electronics', width: 10, height: 4, y: 63,
+      archetype: 'silhouette', shape: 'streamer', texture: 'matte', color: '#18191b', colorId: 'onyx_black',
+      secondaryTexture: 'metal', secondaryColor: '#ffffff',
+      noun: 'Apple TV 4K streaming box',
+      description: 'A compact matte-black streaming media box with rounded corners and a subtle status LED, resting discreetly on the media console.',
+    },
+    speakers_desktop: {
+      label: 'Desktop Monitors (Pair)', category: 'electronics', width: 36, height: 24, y: 63,
+      archetype: 'silhouette', shape: 'studioSpeakers', texture: 'matte', color: '#242528', colorId: 'anthracite',
+      secondaryTexture: 'metal', secondaryColor: '#d4af37', secondaryColorId: 'satin_gold',
+      noun: 'pair of desktop studio reference monitors',
+      description: 'A pair of compact nearfield studio monitors with composite Kevlar mid-bass cones and silk dome tweeters flanking the workspace.',
+    },
   };
   Object.assign(V.presets, add);
 
@@ -386,3 +444,4 @@
 
   Object.assign(V, { palettes, swatchIndex, textureFamily, textureNoun, archetypes, paramSchema, handlePhrase, resolveParams });
 })();
+

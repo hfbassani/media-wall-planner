@@ -559,6 +559,329 @@
         ctx.fill();
       }
     },
+    ps5(ctx, el, w, h, s, t) {
+      // Horizontal PS5 console
+      // Stand cushion
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(w * 0.15, h * 0.92, w * 0.7, h * 0.08);
+
+      // Black center chassis
+      fillWith(ctx, (c) => roundRect(c, w * 0.06, h * 0.2, w * 0.88, h * 0.6, 2 * s), () => {
+        sec(ctx, el, 0, 0, w, h, s, t, 'core');
+        ctx.fillStyle = '#0d0e12';
+        ctx.fillRect(w * 0.06, h * 0.2, w * 0.88, h * 0.6);
+      });
+
+      // Sculpted outer white wings
+      fillWith(ctx, (c) => {
+        // Top flared wing
+        c.moveTo(0, h * 0.12);
+        c.quadraticCurveTo(w * 0.5, 0, w, h * 0.08);
+        c.lineTo(w * 0.98, h * 0.28);
+        c.quadraticCurveTo(w * 0.5, h * 0.18, 0, h * 0.26);
+        c.closePath();
+      }, () => prim(ctx, el, 0, 0, w, h, s, t, 'wing_top'));
+
+      fillWith(ctx, (c) => {
+        // Bottom flared wing
+        c.moveTo(0, h * 0.72);
+        c.quadraticCurveTo(w * 0.5, h * 0.8, w * 0.98, h * 0.74);
+        c.lineTo(w, h * 0.92);
+        c.quadraticCurveTo(w * 0.5, h, 0, h * 0.88);
+        c.closePath();
+      }, () => prim(ctx, el, 0, 0, w, h, s, t, 'wing_bot'));
+
+      // Cyan illuminated LED strip in channel
+      const ledG = ctx.createLinearGradient(w * 0.1, 0, w * 0.9, 0);
+      ledG.addColorStop(0, 'rgba(0,210,255,0)');
+      ledG.addColorStop(0.2, 'rgba(0,229,255,0.95)');
+      ledG.addColorStop(0.8, 'rgba(0,229,255,0.95)');
+      ledG.addColorStop(1, 'rgba(0,210,255,0)');
+      ctx.fillStyle = ledG;
+      ctx.fillRect(w * 0.08, h * 0.22, w * 0.84, Math.max(1, 0.7 * s));
+
+      // USB port and disc slot details
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillRect(w * 0.68, h * 0.44, 3 * s, 1.2 * s);
+      ctx.fillRect(w * 0.76, h * 0.44, 1.5 * s, 1.2 * s);
+    },
+    xbox(ctx, el, w, h, s, t) {
+      // Vertical Xbox Series X monolith
+      fillWith(ctx, (c) => roundRect(c, 0, 0, w, h, 2 * s), () => prim(ctx, el, 0, 0, w, h, s, t, 'tower'));
+
+      // Top concave ventilation grid with green glow
+      const ventH = h * 0.12;
+      const g = ctx.createLinearGradient(0, 0, 0, ventH);
+      g.addColorStop(0, el.secondaryColor || '#107c10');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, ventH);
+
+      // Perforated vent dots at top
+      ctx.fillStyle = '#0a0a0c';
+      const cols = 7, rows = 3;
+      const dx = w / (cols + 1), dy = ventH / (rows + 1);
+      for (let r = 1; r <= rows; r++) {
+        for (let c = 1; c <= cols; c++) {
+          ctx.beginPath();
+          ctx.arc(c * dx, r * dy, 0.7 * s, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Glowing power button (top-left)
+      const pbx = w * 0.22, pby = h * 0.16, pbr = Math.max(1.8, 2.2 * s);
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(pbx, pby, pbr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0a0a0c';
+      ctx.beginPath();
+      ctx.arc(pbx, pby, pbr * 0.65, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Optical disc slot (bottom-left)
+      ctx.fillStyle = 'rgba(0,0,0,0.85)';
+      ctx.fillRect(w * 0.14, h * 0.62, Math.max(1, 0.6 * s), h * 0.26);
+
+      // USB port (bottom-right)
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillRect(w * 0.76, h * 0.84, 1.2 * s, 3 * s);
+    },
+    switch(ctx, el, w, h, s, t) {
+      // Nintendo Switch OLED in dock
+      // Dock cradle (lower 68%)
+      fillWith(ctx, (c) => roundRect(c, w * 0.06, h * 0.32, w * 0.88, h * 0.68, 3 * s), () => {
+        prim(ctx, el, 0, 0, w, h, s, t, 'dock');
+      });
+
+      // Console screen peeking out from behind dock front wall
+      // Left Joy-Con
+      fillWith(ctx, (c) => roundRect(c, w * 0.1, h * 0.04, w * 0.16, h * 0.45, 3 * s), () => {
+        sec(ctx, el, 0, 0, w, h, s, t, 'joyL');
+        ctx.fillStyle = '#1c1d21';
+        ctx.beginPath();
+        ctx.arc(w * 0.18, h * 0.16, 1.8 * s, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Right Joy-Con
+      fillWith(ctx, (c) => roundRect(c, w * 0.74, h * 0.04, w * 0.16, h * 0.45, 3 * s), () => {
+        sec(ctx, el, 0, 0, w, h, s, t, 'joyR');
+        ctx.fillStyle = '#1c1d21';
+        ctx.beginPath();
+        ctx.arc(w * 0.82, h * 0.24, 1.8 * s, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Screen glass
+      ctx.fillStyle = '#0a0a0d';
+      ctx.fillRect(w * 0.26, h * 0.04, w * 0.48, h * 0.38);
+
+      // Status LED on dock (bottom-left)
+      ctx.fillStyle = '#00e575';
+      ctx.beginPath();
+      ctx.arc(w * 0.12, h * 0.88, Math.max(0.8, 1 * s), 0, Math.PI * 2);
+      ctx.fill();
+    },
+    receiver(ctx, el, w, h, s, t) {
+      // Premium AV Receiver
+      // 4 isolation feet
+      ctx.fillStyle = '#0f1012';
+      ctx.fillRect(w * 0.06, h * 0.94, w * 0.08, h * 0.06);
+      ctx.fillRect(w * 0.86, h * 0.94, w * 0.08, h * 0.06);
+
+      // Main brushed faceplate
+      fillWith(ctx, (c) => roundRect(c, 0, 0, w, h * 0.94, 2 * s), () => prim(ctx, el, 0, 0, w, h * 0.94, s, t, 'face'));
+
+      // Center OLED / VFD display window
+      const winX = w * 0.26, winY = h * 0.14, winW = w * 0.48, winH = h * 0.42;
+      ctx.fillStyle = '#0b0c0f';
+      ctx.fillRect(winX, winY, winW, winH);
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.strokeRect(winX, winY, winW, winH);
+
+      // Illuminated display text / graphics simulation
+      ctx.fillStyle = el.secondaryColor || '#00d2ff';
+      ctx.fillRect(winX + winW * 0.12, winY + winH * 0.35, winW * 0.42, Math.max(1, 1.2 * s));
+      ctx.fillRect(winX + winW * 0.62, winY + winH * 0.35, winW * 0.24, Math.max(1, 1.2 * s));
+      ctx.fillStyle = 'rgba(0,210,255,0.45)';
+      ctx.fillRect(winX + winW * 0.12, winY + winH * 0.62, winW * 0.6, Math.max(0.8, 0.8 * s));
+
+      // Left rotary input selector knob
+      const lkx = w * 0.14, lky = h * 0.46, lkr = Math.min(w * 0.08, h * 0.26);
+      ctx.fillStyle = '#22252a';
+      ctx.beginPath();
+      ctx.arc(lkx, lky, lkr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.stroke();
+
+      // Right large master volume knob
+      const rkx = w * 0.86, rky = h * 0.46, rkr = Math.min(w * 0.1, h * 0.32);
+      ctx.fillStyle = '#24272d';
+      ctx.beginPath();
+      ctx.arc(rkx, rky, rkr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.stroke();
+
+      // Power switch & headphone jack
+      ctx.fillStyle = '#00d2ff';
+      ctx.beginPath();
+      ctx.arc(w * 0.07, h * 0.72, Math.max(0.8, 1 * s), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#c5a059'; // gold 6.35mm jack
+      ctx.beginPath();
+      ctx.arc(w * 0.14, h * 0.76, Math.max(1, 1.4 * s), 0, Math.PI * 2);
+      ctx.fill();
+    },
+    pcTower(ctx, el, w, h, s, t) {
+      // Architectural Mid-Tower Gaming PC
+      // Isolation feet
+      ctx.fillStyle = '#111215';
+      ctx.fillRect(w * 0.08, h * 0.97, w * 0.18, h * 0.03);
+      ctx.fillRect(w * 0.74, h * 0.97, w * 0.18, h * 0.03);
+
+      // Chassis body
+      fillWith(ctx, (c) => roundRect(c, 0, 0, w, h * 0.97, 2 * s), () => prim(ctx, el, 0, 0, w, h * 0.97, s, t, 'case'));
+
+      // Tempered glass side window
+      const gwX = w * 0.08, gwY = h * 0.06, gwW = w * 0.84, gwH = h * 0.85;
+      ctx.fillStyle = 'rgba(12, 14, 18, 0.88)';
+      ctx.fillRect(gwX, gwY, gwW, gwH);
+
+      // Internal illuminated hardware
+      const glow = el.secondaryColor || '#8a63d2';
+      // GPU backplate line & RGB strip
+      ctx.fillStyle = glow;
+      ctx.fillRect(gwX + gwW * 0.1, gwY + gwH * 0.52, gwW * 0.75, Math.max(1, 1.2 * s));
+      // RAM sticks RGB glow
+      ctx.fillRect(gwX + gwW * 0.48, gwY + gwH * 0.22, 1.2 * s, gwH * 0.14);
+      ctx.fillRect(gwX + gwW * 0.54, gwY + gwH * 0.22, 1.2 * s, gwH * 0.14);
+      // CPU cooler illuminated ring
+      ctx.strokeStyle = glow;
+      ctx.lineWidth = Math.max(1, 1.2 * s);
+      ctx.beginPath();
+      ctx.arc(gwX + gwW * 0.32, gwY + gwH * 0.3, Math.min(gwW, gwH) * 0.12, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Glass diagonal reflection highlight
+      const grad = ctx.createLinearGradient(gwX, gwY, gwX + gwW, gwY + gwH);
+      grad.addColorStop(0, 'rgba(255,255,255,0.08)');
+      grad.addColorStop(0.4, 'rgba(255,255,255,0.02)');
+      grad.addColorStop(0.6, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(gwX, gwY, gwW, gwH);
+
+      // Front power button
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(w * 0.86, h * 0.03, Math.max(0.7, 0.9 * s), 0, Math.PI * 2);
+      ctx.fill();
+    },
+    monitor(ctx, el, w, h, s, t) {
+      // 34" Ultrawide Curved Monitor
+      // Aluminum desk stand base
+      fillWith(ctx, (c) => roundRect(c, w * 0.32, h * 0.94, w * 0.36, h * 0.06, 1.5 * s), () => {
+        sec(ctx, el, 0, 0, w, h, s, t, 'standBase');
+      });
+      // Stand vertical column
+      fillWith(ctx, (c) => c.rect(w * 0.47, h * 0.45, w * 0.06, h * 0.5), () => {
+        sec(ctx, el, 0, 0, w, h, s, t, 'standCol');
+      });
+
+      // Curved display panel
+      const pH = h * 0.74;
+      fillWith(ctx, (c) => roundRect(c, 0, 0, w, pH, 3 * s), () => {
+        prim(ctx, el, 0, 0, w, pH, s, t, 'bezel');
+      });
+
+      // Dark ultra-wide active screen area
+      const bz = Math.max(1.5, 1.8 * s);
+      const scrW = w - bz * 2, scrH = pH - bz * 2;
+      ctx.fillStyle = '#0f1115';
+      ctx.fillRect(bz, bz, scrW, scrH);
+
+      // Curved screen curvature gradient sheen
+      const sGrad = ctx.createLinearGradient(0, 0, w, 0);
+      sGrad.addColorStop(0, 'rgba(255,255,255,0.07)');
+      sGrad.addColorStop(0.15, 'rgba(255,255,255,0.02)');
+      sGrad.addColorStop(0.5, 'rgba(0,0,0,0.1)');
+      sGrad.addColorStop(0.85, 'rgba(255,255,255,0.02)');
+      sGrad.addColorStop(1, 'rgba(255,255,255,0.07)');
+      ctx.fillStyle = sGrad;
+      ctx.fillRect(bz, bz, scrW, scrH);
+
+      // Power indicator dot
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.beginPath();
+      ctx.arc(w / 2, pH - bz / 2, 0.7 * s, 0, Math.PI * 2);
+      ctx.fill();
+    },
+    streamer(ctx, el, w, h, s, t) {
+      // Apple TV 4K squircle streaming box
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(w * 0.05, h * 0.85, w * 0.9, h * 0.15);
+
+      fillWith(ctx, (c) => roundRect(c, w * 0.02, 0, w * 0.96, h * 0.85, 3 * s), () => {
+        prim(ctx, el, 0, 0, w, h, s, t, 'streamer');
+      });
+
+      // Top bevel sheen
+      const bg = ctx.createLinearGradient(0, 0, 0, h * 0.3);
+      bg.addColorStop(0, 'rgba(255,255,255,0.12)');
+      bg.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = bg;
+      ctx.fillRect(w * 0.04, 0, w * 0.92, h * 0.3);
+
+      // Status white LED
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(w * 0.86, h * 0.44, Math.max(0.6, 0.8 * s), 0, Math.PI * 2);
+      ctx.fill();
+    },
+    studioSpeakers(ctx, el, w, h, s, t) {
+      // Pair of studio monitors (Left & Right)
+      const spkW = w * 0.44, gap = w * 0.12;
+      const cones = [0, spkW + gap];
+
+      for (let i = 0; i < cones.length; i++) {
+        const sx = cones[i];
+        // Speaker cabinet
+        fillWith(ctx, (c) => roundRect(c, sx, 0, spkW, h, 2.5 * s), () => {
+          prim(ctx, el, sx, 0, spkW, h, s, t, 'box' + i);
+        });
+
+        const cx = sx + spkW / 2;
+        // Silk dome tweeter with waveguide ring
+        const twY = h * 0.28, twR = Math.min(spkW * 0.28, h * 0.14);
+        ctx.fillStyle = '#151619';
+        ctx.beginPath();
+        ctx.arc(cx, twY, twR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0a0a0c';
+        ctx.beginPath();
+        ctx.arc(cx, twY, twR * 0.55, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Kevlar composite mid-bass woofer cone
+        const wfY = h * 0.68, wfR = Math.min(spkW * 0.38, h * 0.22);
+        ctx.fillStyle = el.secondaryColor || '#d4af37';
+        ctx.beginPath();
+        ctx.arc(cx, wfY, wfR, 0, Math.PI * 2);
+        ctx.fill();
+        // Inverted black center dust cap
+        ctx.fillStyle = '#141518';
+        ctx.beginPath();
+        ctx.arc(cx, wfY, wfR * 0.38, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bass reflex port slit
+        ctx.fillStyle = '#08080a';
+        ctx.fillRect(cx - spkW * 0.2, h * 0.92, spkW * 0.4, Math.max(1, 1.2 * s));
+      }
+    },
   };
   function silhouette(ctx, el, w, h, s, time) {
     const shape = (V.presets[el.type] || {}).shape;

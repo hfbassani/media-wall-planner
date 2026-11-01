@@ -293,7 +293,7 @@ html, body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 5px;
-  max-height: 400px;
+  max-height: 520px;
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -303,6 +303,101 @@ html, body {
 .presets-grid::-webkit-scrollbar-thumb {
   background: var(--line);
   border-radius: 4px;
+}
+
+/* Category Accordion Groups in Presets Library */
+.preset-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+.preset-total-badge {
+  color: var(--text-2);
+  font-weight: 500;
+}
+.preset-expand-links {
+  display: flex;
+  gap: 8px;
+}
+.preset-link-btn {
+  background: none;
+  border: none;
+  color: var(--brass-strong);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-family: inherit;
+}
+.preset-link-btn:hover {
+  color: var(--text-0);
+}
+
+.preset-category-group {
+  margin-bottom: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  overflow: hidden;
+  transition: border-color var(--t-fast);
+}
+.preset-category-group:hover {
+  border-color: var(--line-strong);
+}
+.preset-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  background: var(--bg-2);
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-0);
+  transition: background var(--t-fast);
+}
+.preset-group-header:hover {
+  background: var(--bg-3);
+}
+.preset-group-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.preset-group-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.preset-group-count {
+  font-size: 10px;
+  padding: 1px 6px;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+}
+.preset-group-chevron {
+  font-size: 9px;
+  color: var(--text-2);
+  display: inline-block;
+  width: 10px;
+  text-align: center;
+}
+.preset-group-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg-1);
+}
+.preset-group-body.collapsed {
+  display: none;
 }
 .preset-item-btn {
   display: flex;

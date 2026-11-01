@@ -373,7 +373,7 @@ html, body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 5px;
-  max-height: 400px;
+  max-height: 520px;
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -383,6 +383,101 @@ html, body {
 .presets-grid::-webkit-scrollbar-thumb {
   background: var(--line);
   border-radius: 4px;
+}
+
+/* Category Accordion Groups in Presets Library */
+.preset-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+.preset-total-badge {
+  color: var(--text-2);
+  font-weight: 500;
+}
+.preset-expand-links {
+  display: flex;
+  gap: 8px;
+}
+.preset-link-btn {
+  background: none;
+  border: none;
+  color: var(--brass-strong);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-family: inherit;
+}
+.preset-link-btn:hover {
+  color: var(--text-0);
+}
+
+.preset-category-group {
+  margin-bottom: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  overflow: hidden;
+  transition: border-color var(--t-fast);
+}
+.preset-category-group:hover {
+  border-color: var(--line-strong);
+}
+.preset-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  background: var(--bg-2);
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-0);
+  transition: background var(--t-fast);
+}
+.preset-group-header:hover {
+  background: var(--bg-3);
+}
+.preset-group-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.preset-group-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.preset-group-count {
+  font-size: 10px;
+  padding: 1px 6px;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+}
+.preset-group-chevron {
+  font-size: 9px;
+  color: var(--text-2);
+  display: inline-block;
+  width: 10px;
+  text-align: center;
+}
+.preset-group-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg-1);
+}
+.preset-group-body.collapsed {
+  display: none;
 }
 .preset-item-btn {
   display: flex;
@@ -1526,12 +1621,14 @@ html, body {
   const categories = {
     all: { label: 'All', icon: '✦' },
     displays: { label: 'Displays', icon: '📺' },
+    electronics: { label: 'Gaming & Gear', icon: '🎮' },
     audio: { label: 'Audio', icon: '🔊' },
     millwork: { label: 'Cabinetry', icon: '🗄️' },
     shelving: { label: 'Shelving', icon: '📚' },
     backdrops: { label: 'Backdrops', icon: '🪵' },
     fireplace: { label: 'Fireplace', icon: '🔥' },
-    props: { label: 'Props & Lights', icon: '💡' },
+    seating: { label: 'Seating', icon: '🛋️' },
+    props: { label: 'Lighting & Decor', icon: '💡' },
   };
 
   const moods = {
@@ -2455,6 +2552,64 @@ html, body {
       noun: 'curated console decor arrangement',
       description: 'A curated stack of coffee-table art books beside a sculptural ceramic vessel with dried botanicals.',
     },
+
+    // Gaming & AV Electronics
+    console_ps5: {
+      label: 'PlayStation 5', category: 'electronics', width: 39, height: 11, y: 63,
+      archetype: 'silhouette', shape: 'ps5', texture: 'matte', color: '#f5f5f7', colorId: 'chalk_white',
+      secondaryTexture: 'metal', secondaryColor: '#121316', secondaryColorId: 'onyx_black',
+      noun: 'Sony PlayStation 5 gaming console',
+      description: 'A sleek white Sony PlayStation 5 console resting horizontally with sculpted outer wing plates and a subtle glowing cyan power accent strip.',
+    },
+    console_xbox: {
+      label: 'Xbox Series X', category: 'electronics', width: 15, height: 30, y: 63,
+      archetype: 'silhouette', shape: 'xbox', texture: 'matte', color: '#1a1a1c', colorId: 'onyx_black',
+      secondaryTexture: 'metal', secondaryColor: '#107c10',
+      noun: 'Xbox Series X gaming console',
+      description: 'A minimalist matte black monolithic Xbox Series X vertical gaming tower with concave top ventilation grid illuminated with subtle green glow.',
+    },
+    console_switch: {
+      label: 'Nintendo Switch OLED', category: 'electronics', width: 24, height: 10, y: 63,
+      archetype: 'silhouette', shape: 'switch', texture: 'matte', color: '#232427', colorId: 'anthracite',
+      secondaryTexture: 'matte', secondaryColor: '#f0f0f2', secondaryColorId: 'chalk_white',
+      noun: 'Nintendo Switch OLED console in charging dock',
+      description: 'A compact Nintendo Switch OLED console docked neatly in its rounded charging cradle.',
+    },
+    receiver_av: {
+      label: 'AV Receiver', category: 'electronics', width: 44, height: 17, y: 63,
+      archetype: 'silhouette', shape: 'receiver', texture: 'metal', color: '#1c1e22', colorId: 'black_steel',
+      secondaryTexture: 'metal', secondaryColor: '#00d2ff',
+      noun: 'audiophile AV surround sound receiver',
+      description: 'A premium brushed dark steel home theater AV receiver with twin precision rotary dials, headphone jack, and illuminated amber/cyan dot-matrix display window.',
+    },
+    pc_gaming_tower: {
+      label: 'Gaming PC Tower', category: 'electronics', width: 22, height: 46, y: 63,
+      archetype: 'silhouette', shape: 'pcTower', texture: 'metal', color: '#1c1d21', colorId: 'gunmetal',
+      secondaryTexture: 'glass', secondaryColor: '#8a63d2',
+      noun: 'custom architectural gaming PC mid-tower',
+      description: 'A custom anodized aluminium gaming PC tower with a dark tinted tempered glass side panel showcasing clean, subtly illuminated internal liquid cooling and hardware.',
+    },
+    monitor_curved: {
+      label: '34" Curved Monitor', category: 'electronics', width: 81, height: 46, y: 63,
+      archetype: 'silhouette', shape: 'monitor', texture: 'metal', color: '#151618', colorId: 'black_steel',
+      secondaryTexture: 'metal', secondaryColor: '#b2b6ba', secondaryColorId: 'brushed_nickel',
+      noun: '34-inch curved ultrawide 21:9 monitor',
+      description: 'A 34-inch 21:9 curved ultrawide desktop monitor with ultra-thin bezels mounted on a sculptural brushed aluminum desk stand.',
+    },
+    electronics_streamer: {
+      label: 'Streaming Media Box', category: 'electronics', width: 10, height: 4, y: 63,
+      archetype: 'silhouette', shape: 'streamer', texture: 'matte', color: '#18191b', colorId: 'onyx_black',
+      secondaryTexture: 'metal', secondaryColor: '#ffffff',
+      noun: 'Apple TV 4K streaming box',
+      description: 'A compact matte-black streaming media box with rounded corners and a subtle status LED, resting discreetly on the media console.',
+    },
+    speakers_desktop: {
+      label: 'Desktop Monitors (Pair)', category: 'electronics', width: 36, height: 24, y: 63,
+      archetype: 'silhouette', shape: 'studioSpeakers', texture: 'matte', color: '#242528', colorId: 'anthracite',
+      secondaryTexture: 'metal', secondaryColor: '#d4af37', secondaryColorId: 'satin_gold',
+      noun: 'pair of desktop studio reference monitors',
+      description: 'A pair of compact nearfield studio monitors with composite Kevlar mid-bass cones and silk dome tweeters flanking the workspace.',
+    },
   };
   Object.assign(V.presets, add);
 
@@ -2491,6 +2646,7 @@ html, body {
 
   Object.assign(V, { palettes, swatchIndex, textureFamily, textureNoun, archetypes, paramSchema, handlePhrase, resolveParams });
 })();
+
 </script>
 <script>
 /* === src/state.js === */
@@ -5346,6 +5502,329 @@ html, body {
         ctx.beginPath();
         ctx.ellipse(lx, ly, (3 + rand() * 3) * s, (1.6 + rand() * 1.4) * s, rand() * Math.PI, 0, Math.PI * 2);
         ctx.fill();
+      }
+    },
+    ps5(ctx, el, w, h, s, t) {
+      // Horizontal PS5 console
+      // Stand cushion
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(w * 0.15, h * 0.92, w * 0.7, h * 0.08);
+
+      // Black center chassis
+      fillWith(ctx, (c) => roundRect(c, w * 0.06, h * 0.2, w * 0.88, h * 0.6, 2 * s), () => {
+        sec(ctx, el, 0, 0, w, h, s, t, 'core');
+        ctx.fillStyle = '#0d0e12';
+        ctx.fillRect(w * 0.06, h * 0.2, w * 0.88, h * 0.6);
+      });
+
+      // Sculpted outer white wings
+      fillWith(ctx, (c) => {
+        // Top flared wing
+        c.moveTo(0, h * 0.12);
+        c.quadraticCurveTo(w * 0.5, 0, w, h * 0.08);
+        c.lineTo(w * 0.98, h * 0.28);
+        c.quadraticCurveTo(w * 0.5, h * 0.18, 0, h * 0.26);
+        c.closePath();
+      }, () => prim(ctx, el, 0, 0, w, h, s, t, 'wing_top'));
+
+      fillWith(ctx, (c) => {
+        // Bottom flared wing
+        c.moveTo(0, h * 0.72);
+        c.quadraticCurveTo(w * 0.5, h * 0.8, w * 0.98, h * 0.74);
+        c.lineTo(w, h * 0.92);
+        c.quadraticCurveTo(w * 0.5, h, 0, h * 0.88);
+        c.closePath();
+      }, () => prim(ctx, el, 0, 0, w, h, s, t, 'wing_bot'));
+
+      // Cyan illuminated LED strip in channel
+      const ledG = ctx.createLinearGradient(w * 0.1, 0, w * 0.9, 0);
+      ledG.addColorStop(0, 'rgba(0,210,255,0)');
+      ledG.addColorStop(0.2, 'rgba(0,229,255,0.95)');
+      ledG.addColorStop(0.8, 'rgba(0,229,255,0.95)');
+      ledG.addColorStop(1, 'rgba(0,210,255,0)');
+      ctx.fillStyle = ledG;
+      ctx.fillRect(w * 0.08, h * 0.22, w * 0.84, Math.max(1, 0.7 * s));
+
+      // USB port and disc slot details
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillRect(w * 0.68, h * 0.44, 3 * s, 1.2 * s);
+      ctx.fillRect(w * 0.76, h * 0.44, 1.5 * s, 1.2 * s);
+    },
+    xbox(ctx, el, w, h, s, t) {
+      // Vertical Xbox Series X monolith
+      fillWith(ctx, (c) => roundRect(c, 0, 0, w, h, 2 * s), () => prim(ctx, el, 0, 0, w, h, s, t, 'tower'));
+
+      // Top concave ventilation grid with green glow
+      const ventH = h * 0.12;
+      const g = ctx.createLinearGradient(0, 0, 0, ventH);
+      g.addColorStop(0, el.secondaryColor || '#107c10');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, ventH);
+
+      // Perforated vent dots at top
+      ctx.fillStyle = '#0a0a0c';
+      const cols = 7, rows = 3;
+      const dx = w / (cols + 1), dy = ventH / (rows + 1);
+      for (let r = 1; r <= rows; r++) {
+        for (let c = 1; c <= cols; c++) {
+          ctx.beginPath();
+          ctx.arc(c * dx, r * dy, 0.7 * s, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Glowing power button (top-left)
+      const pbx = w * 0.22, pby = h * 0.16, pbr = Math.max(1.8, 2.2 * s);
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(pbx, pby, pbr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0a0a0c';
+      ctx.beginPath();
+      ctx.arc(pbx, pby, pbr * 0.65, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Optical disc slot (bottom-left)
+      ctx.fillStyle = 'rgba(0,0,0,0.85)';
+      ctx.fillRect(w * 0.14, h * 0.62, Math.max(1, 0.6 * s), h * 0.26);
+
+      // USB port (bottom-right)
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillRect(w * 0.76, h * 0.84, 1.2 * s, 3 * s);
+    },
+    switch(ctx, el, w, h, s, t) {
+      // Nintendo Switch OLED in dock
+      // Dock cradle (lower 68%)
+      fillWith(ctx, (c) => roundRect(c, w * 0.06, h * 0.32, w * 0.88, h * 0.68, 3 * s), () => {
+        prim(ctx, el, 0, 0, w, h, s, t, 'dock');
+      });
+
+      // Console screen peeking out from behind dock front wall
+      // Left Joy-Con
+      fillWith(ctx, (c) => roundRect(c, w * 0.1, h * 0.04, w * 0.16, h * 0.45, 3 * s), () => {
+        sec(ctx, el, 0, 0, w, h, s, t, 'joyL');
+        ctx.fillStyle = '#1c1d21';
+        ctx.beginPath();
+        ctx.arc(w * 0.18, h * 0.16, 1.8 * s, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Right Joy-Con
+      fillWith(ctx, (c) => roundRect(c, w * 0.74, h * 0.04, w * 0.16, h * 0.45, 3 * s), () => {
+        sec(ctx, el, 0, 0, w, h, s, t, 'joyR');
+        ctx.fillStyle = '#1c1d21';
+        ctx.beginPath();
+        ctx.arc(w * 0.82, h * 0.24, 1.8 * s, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Screen glass
+      ctx.fillStyle = '#0a0a0d';
+      ctx.fillRect(w * 0.26, h * 0.04, w * 0.48, h * 0.38);
+
+      // Status LED on dock (bottom-left)
+      ctx.fillStyle = '#00e575';
+      ctx.beginPath();
+      ctx.arc(w * 0.12, h * 0.88, Math.max(0.8, 1 * s), 0, Math.PI * 2);
+      ctx.fill();
+    },
+    receiver(ctx, el, w, h, s, t) {
+      // Premium AV Receiver
+      // 4 isolation feet
+      ctx.fillStyle = '#0f1012';
+      ctx.fillRect(w * 0.06, h * 0.94, w * 0.08, h * 0.06);
+      ctx.fillRect(w * 0.86, h * 0.94, w * 0.08, h * 0.06);
+
+      // Main brushed faceplate
+      fillWith(ctx, (c) => roundRect(c, 0, 0, w, h * 0.94, 2 * s), () => prim(ctx, el, 0, 0, w, h * 0.94, s, t, 'face'));
+
+      // Center OLED / VFD display window
+      const winX = w * 0.26, winY = h * 0.14, winW = w * 0.48, winH = h * 0.42;
+      ctx.fillStyle = '#0b0c0f';
+      ctx.fillRect(winX, winY, winW, winH);
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.strokeRect(winX, winY, winW, winH);
+
+      // Illuminated display text / graphics simulation
+      ctx.fillStyle = el.secondaryColor || '#00d2ff';
+      ctx.fillRect(winX + winW * 0.12, winY + winH * 0.35, winW * 0.42, Math.max(1, 1.2 * s));
+      ctx.fillRect(winX + winW * 0.62, winY + winH * 0.35, winW * 0.24, Math.max(1, 1.2 * s));
+      ctx.fillStyle = 'rgba(0,210,255,0.45)';
+      ctx.fillRect(winX + winW * 0.12, winY + winH * 0.62, winW * 0.6, Math.max(0.8, 0.8 * s));
+
+      // Left rotary input selector knob
+      const lkx = w * 0.14, lky = h * 0.46, lkr = Math.min(w * 0.08, h * 0.26);
+      ctx.fillStyle = '#22252a';
+      ctx.beginPath();
+      ctx.arc(lkx, lky, lkr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.stroke();
+
+      // Right large master volume knob
+      const rkx = w * 0.86, rky = h * 0.46, rkr = Math.min(w * 0.1, h * 0.32);
+      ctx.fillStyle = '#24272d';
+      ctx.beginPath();
+      ctx.arc(rkx, rky, rkr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.stroke();
+
+      // Power switch & headphone jack
+      ctx.fillStyle = '#00d2ff';
+      ctx.beginPath();
+      ctx.arc(w * 0.07, h * 0.72, Math.max(0.8, 1 * s), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#c5a059'; // gold 6.35mm jack
+      ctx.beginPath();
+      ctx.arc(w * 0.14, h * 0.76, Math.max(1, 1.4 * s), 0, Math.PI * 2);
+      ctx.fill();
+    },
+    pcTower(ctx, el, w, h, s, t) {
+      // Architectural Mid-Tower Gaming PC
+      // Isolation feet
+      ctx.fillStyle = '#111215';
+      ctx.fillRect(w * 0.08, h * 0.97, w * 0.18, h * 0.03);
+      ctx.fillRect(w * 0.74, h * 0.97, w * 0.18, h * 0.03);
+
+      // Chassis body
+      fillWith(ctx, (c) => roundRect(c, 0, 0, w, h * 0.97, 2 * s), () => prim(ctx, el, 0, 0, w, h * 0.97, s, t, 'case'));
+
+      // Tempered glass side window
+      const gwX = w * 0.08, gwY = h * 0.06, gwW = w * 0.84, gwH = h * 0.85;
+      ctx.fillStyle = 'rgba(12, 14, 18, 0.88)';
+      ctx.fillRect(gwX, gwY, gwW, gwH);
+
+      // Internal illuminated hardware
+      const glow = el.secondaryColor || '#8a63d2';
+      // GPU backplate line & RGB strip
+      ctx.fillStyle = glow;
+      ctx.fillRect(gwX + gwW * 0.1, gwY + gwH * 0.52, gwW * 0.75, Math.max(1, 1.2 * s));
+      // RAM sticks RGB glow
+      ctx.fillRect(gwX + gwW * 0.48, gwY + gwH * 0.22, 1.2 * s, gwH * 0.14);
+      ctx.fillRect(gwX + gwW * 0.54, gwY + gwH * 0.22, 1.2 * s, gwH * 0.14);
+      // CPU cooler illuminated ring
+      ctx.strokeStyle = glow;
+      ctx.lineWidth = Math.max(1, 1.2 * s);
+      ctx.beginPath();
+      ctx.arc(gwX + gwW * 0.32, gwY + gwH * 0.3, Math.min(gwW, gwH) * 0.12, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Glass diagonal reflection highlight
+      const grad = ctx.createLinearGradient(gwX, gwY, gwX + gwW, gwY + gwH);
+      grad.addColorStop(0, 'rgba(255,255,255,0.08)');
+      grad.addColorStop(0.4, 'rgba(255,255,255,0.02)');
+      grad.addColorStop(0.6, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(gwX, gwY, gwW, gwH);
+
+      // Front power button
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(w * 0.86, h * 0.03, Math.max(0.7, 0.9 * s), 0, Math.PI * 2);
+      ctx.fill();
+    },
+    monitor(ctx, el, w, h, s, t) {
+      // 34" Ultrawide Curved Monitor
+      // Aluminum desk stand base
+      fillWith(ctx, (c) => roundRect(c, w * 0.32, h * 0.94, w * 0.36, h * 0.06, 1.5 * s), () => {
+        sec(ctx, el, 0, 0, w, h, s, t, 'standBase');
+      });
+      // Stand vertical column
+      fillWith(ctx, (c) => c.rect(w * 0.47, h * 0.45, w * 0.06, h * 0.5), () => {
+        sec(ctx, el, 0, 0, w, h, s, t, 'standCol');
+      });
+
+      // Curved display panel
+      const pH = h * 0.74;
+      fillWith(ctx, (c) => roundRect(c, 0, 0, w, pH, 3 * s), () => {
+        prim(ctx, el, 0, 0, w, pH, s, t, 'bezel');
+      });
+
+      // Dark ultra-wide active screen area
+      const bz = Math.max(1.5, 1.8 * s);
+      const scrW = w - bz * 2, scrH = pH - bz * 2;
+      ctx.fillStyle = '#0f1115';
+      ctx.fillRect(bz, bz, scrW, scrH);
+
+      // Curved screen curvature gradient sheen
+      const sGrad = ctx.createLinearGradient(0, 0, w, 0);
+      sGrad.addColorStop(0, 'rgba(255,255,255,0.07)');
+      sGrad.addColorStop(0.15, 'rgba(255,255,255,0.02)');
+      sGrad.addColorStop(0.5, 'rgba(0,0,0,0.1)');
+      sGrad.addColorStop(0.85, 'rgba(255,255,255,0.02)');
+      sGrad.addColorStop(1, 'rgba(255,255,255,0.07)');
+      ctx.fillStyle = sGrad;
+      ctx.fillRect(bz, bz, scrW, scrH);
+
+      // Power indicator dot
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.beginPath();
+      ctx.arc(w / 2, pH - bz / 2, 0.7 * s, 0, Math.PI * 2);
+      ctx.fill();
+    },
+    streamer(ctx, el, w, h, s, t) {
+      // Apple TV 4K squircle streaming box
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(w * 0.05, h * 0.85, w * 0.9, h * 0.15);
+
+      fillWith(ctx, (c) => roundRect(c, w * 0.02, 0, w * 0.96, h * 0.85, 3 * s), () => {
+        prim(ctx, el, 0, 0, w, h, s, t, 'streamer');
+      });
+
+      // Top bevel sheen
+      const bg = ctx.createLinearGradient(0, 0, 0, h * 0.3);
+      bg.addColorStop(0, 'rgba(255,255,255,0.12)');
+      bg.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = bg;
+      ctx.fillRect(w * 0.04, 0, w * 0.92, h * 0.3);
+
+      // Status white LED
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(w * 0.86, h * 0.44, Math.max(0.6, 0.8 * s), 0, Math.PI * 2);
+      ctx.fill();
+    },
+    studioSpeakers(ctx, el, w, h, s, t) {
+      // Pair of studio monitors (Left & Right)
+      const spkW = w * 0.44, gap = w * 0.12;
+      const cones = [0, spkW + gap];
+
+      for (let i = 0; i < cones.length; i++) {
+        const sx = cones[i];
+        // Speaker cabinet
+        fillWith(ctx, (c) => roundRect(c, sx, 0, spkW, h, 2.5 * s), () => {
+          prim(ctx, el, sx, 0, spkW, h, s, t, 'box' + i);
+        });
+
+        const cx = sx + spkW / 2;
+        // Silk dome tweeter with waveguide ring
+        const twY = h * 0.28, twR = Math.min(spkW * 0.28, h * 0.14);
+        ctx.fillStyle = '#151619';
+        ctx.beginPath();
+        ctx.arc(cx, twY, twR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0a0a0c';
+        ctx.beginPath();
+        ctx.arc(cx, twY, twR * 0.55, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Kevlar composite mid-bass woofer cone
+        const wfY = h * 0.68, wfR = Math.min(spkW * 0.38, h * 0.22);
+        ctx.fillStyle = el.secondaryColor || '#d4af37';
+        ctx.beginPath();
+        ctx.arc(cx, wfY, wfR, 0, Math.PI * 2);
+        ctx.fill();
+        // Inverted black center dust cap
+        ctx.fillStyle = '#141518';
+        ctx.beginPath();
+        ctx.arc(cx, wfY, wfR * 0.38, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bass reflex port slit
+        ctx.fillStyle = '#08080a';
+        ctx.fillRect(cx - spkW * 0.2, h * 0.92, spkW * 0.4, Math.max(1, 1.2 * s));
       }
     },
   };
@@ -8363,6 +8842,7 @@ html, body {
     const hasCredenza = state.elements.some((e) => e.type.includes('credenza') || e.type.includes('bench') || e.type === 'upper' || e.type === 'tower_vert' || e.type.includes('sideboard') || e.type.includes('drawer') || e.type.includes('desk'));
     const hasVitrine = state.elements.some((e) => e.type.includes('vitrine'));
     const hasSeating = state.elements.some((e) => e.type.includes('chair') || e.type.includes('sofa') || (V.presets[e.type] && V.presets[e.type].category === 'seating'));
+    const hasElectronics = state.elements.some((e) => e.type.startsWith('console_') || e.type.startsWith('pc_') || e.type.startsWith('receiver_') || e.type.startsWith('monitor_') || e.type.startsWith('electronics_') || (V.presets[e.type] && V.presets[e.type].category === 'electronics'));
     const hasLamps = state.elements.some((e) => e.type.includes('lamp') || e.type.includes('pendant'));
     const hasTv = state.elements.some((e) => e.type.startsWith('tv') || e.type.startsWith('screen') || e.texture === 'glass');
     const hasSoundbar = state.elements.some((e) => e.type === 'soundbar' || e.type === 'speaker_inwall' || e.type === 'subwoofer' || e.type === 'av_bay');
@@ -8437,6 +8917,10 @@ html, body {
 
     if (hasSeating) {
       craftBulletPoints.push(`- Seating & Living Room Scale: Contemporary upholstered seating silhouettes (bouclé or linen upholstery on solid timber or blackened steel frames) providing authentic living room proportion and human scale.`);
+    }
+
+    if (hasElectronics) {
+      craftBulletPoints.push(`- Gaming & AV Electronics: Sleek modern entertainment electronics including flush-mounted gaming consoles, high-fidelity AV receiver with illuminated OLED display, and minimalist desktop PC/monitors cleanly integrated into the joinery.`);
     }
 
     if (hasLamps) {
@@ -10071,6 +10555,7 @@ html, body {
   let presetFilterText = '';
   let activeInspectorZone = 'primary';
   let activePaletteFam = null;
+  const collapsedCategories = new Set();
 
   function init() {
     leftSidebar = document.getElementById('sidebar-left');
@@ -10491,7 +10976,7 @@ html, body {
     const searchInput = U.h('input', {
       type: 'text',
       class: 'preset-search-input',
-      placeholder: 'Search 30+ objects...',
+      placeholder: 'Search 60+ objects...',
       value: presetFilterText,
       oninput: (e) => {
         presetFilterText = e.target.value.toLowerCase().trim();
@@ -10505,6 +10990,7 @@ html, body {
     const catTabs = U.h('div', { class: 'preset-category-tabs' });
     const categories = V.categories || { all: { label: 'All' } };
     for (const [catKey, catObj] of Object.entries(categories)) {
+      const tabLabel = catObj.icon ? `${catObj.icon} ${catObj.label}` : catObj.label;
       const tabBtn = U.h(
         'button',
         {
@@ -10516,44 +11002,163 @@ html, body {
             refreshPresetsGrid();
           },
         },
-        catObj.label
+        tabLabel
       );
       catTabs.appendChild(tabBtn);
     }
     secPresets.appendChild(catTabs);
 
+    // Actions Bar (Total counter + Expand/Collapse All buttons)
+    const actionsBar = U.h('div', { class: 'preset-actions-bar' });
+    const countBadge = U.h('span', { class: 'preset-total-badge' }, '');
+    const expandLinks = U.h('div', { class: 'preset-expand-links' });
+    const btnExpandAll = U.h(
+      'button',
+      {
+        type: 'button',
+        class: 'preset-link-btn',
+        onclick: () => {
+          collapsedCategories.clear();
+          refreshPresetsGrid();
+        },
+      },
+      'Expand All'
+    );
+    const btnCollapseAll = U.h(
+      'button',
+      {
+        type: 'button',
+        class: 'preset-link-btn',
+        onclick: () => {
+          for (const k of Object.keys(V.categories || {})) {
+            if (k !== 'all') collapsedCategories.add(k);
+          }
+          refreshPresetsGrid();
+        },
+      },
+      'Collapse All'
+    );
+    expandLinks.appendChild(btnExpandAll);
+    expandLinks.appendChild(btnCollapseAll);
+    actionsBar.appendChild(countBadge);
+    actionsBar.appendChild(expandLinks);
+    secPresets.appendChild(actionsBar);
+
     const presetsGrid = U.h('div', { class: 'presets-grid' });
+
+    function createPresetBtn(key, p) {
+      return U.h(
+        'button',
+        {
+          class: 'preset-item-btn',
+          title: p.description || p.label,
+          onclick: () => {
+            A.store.addPreset(key);
+            if (window.innerWidth <= 900) rightSidebar.classList.add('open');
+          },
+        },
+        U.h(
+          'div',
+          { class: 'preset-label-wrap' },
+          U.h('span', { class: 'preset-swatch-dot', style: { background: p.color } }),
+          U.h('span', null, p.label)
+        ),
+        U.h('span', { class: 'preset-dims' }, `${p.width}×${p.height}`)
+      );
+    }
+
     function refreshPresetsGrid() {
       presetsGrid.innerHTML = '';
-      let matchCount = 0;
-      for (const [key, p] of Object.entries(V.presets)) {
-        if (key === 'custom') continue;
-        const matchesCat = activePresetCat === 'all' || p.category === activePresetCat;
-        const matchesQuery = !presetFilterText || p.label.toLowerCase().includes(presetFilterText) || (p.noun && p.noun.toLowerCase().includes(presetFilterText));
-        if (!matchesCat || !matchesQuery) continue;
-        matchCount++;
+      const isAll = activePresetCat === 'all';
+      actionsBar.style.display = isAll ? 'flex' : 'none';
 
-        const btn = U.h(
-          'button',
-          {
-            class: 'preset-item-btn',
-            title: p.description || p.label,
-            onclick: () => {
-              A.store.addPreset(key);
-              if (window.innerWidth <= 900) rightSidebar.classList.add('open');
+      const cats = V.categories || {};
+      let totalVisible = 0;
+
+      if (isAll) {
+        // Render collapsible category groups
+        for (const [catKey, catObj] of Object.entries(cats)) {
+          if (catKey === 'all') continue;
+
+          const items = [];
+          for (const [key, p] of Object.entries(V.presets)) {
+            if (key === 'custom') continue;
+            if (p.category !== catKey) continue;
+            const matchesQuery =
+              !presetFilterText ||
+              p.label.toLowerCase().includes(presetFilterText) ||
+              (p.noun && p.noun.toLowerCase().includes(presetFilterText));
+            if (!matchesQuery) continue;
+            items.push([key, p]);
+          }
+
+          if (items.length === 0) continue;
+          totalVisible += items.length;
+
+          // When searching, auto-expand so matching items are visible
+          const isCollapsed = !presetFilterText && collapsedCategories.has(catKey);
+
+          const groupEl = U.h('div', { class: 'preset-category-group' });
+          const chevron = U.h('span', { class: 'preset-group-chevron' }, isCollapsed ? '▶' : '▼');
+          const header = U.h(
+            'div',
+            {
+              class: 'preset-group-header',
+              onclick: () => {
+                if (collapsedCategories.has(catKey)) {
+                  collapsedCategories.delete(catKey);
+                } else {
+                  collapsedCategories.add(catKey);
+                }
+                refreshPresetsGrid();
+              },
             },
-          },
-          U.h('div', { class: 'preset-label-wrap' },
-            U.h('span', { class: 'preset-swatch-dot', style: { background: p.color } }),
-            U.h('span', null, p.label)
-          ),
-          U.h('span', { class: 'preset-dims' }, `${p.width}×${p.height}`)
-        );
-        presetsGrid.appendChild(btn);
+            U.h(
+              'div',
+              { class: 'preset-group-title' },
+              catObj.icon ? U.h('span', null, catObj.icon) : null,
+              U.h('span', null, catObj.label)
+            ),
+            U.h(
+              'div',
+              { class: 'preset-group-meta' },
+              U.h('span', { class: 'preset-group-count' }, `${items.length}`),
+              chevron
+            )
+          );
+          groupEl.appendChild(header);
+
+          const body = U.h('div', { class: `preset-group-body ${isCollapsed ? 'collapsed' : ''}` });
+          for (const [key, p] of items) {
+            body.appendChild(createPresetBtn(key, p));
+          }
+          groupEl.appendChild(body);
+          presetsGrid.appendChild(groupEl);
+        }
+      } else {
+        // Flat list for a single selected category
+        for (const [key, p] of Object.entries(V.presets)) {
+          if (key === 'custom') continue;
+          if (p.category !== activePresetCat) continue;
+          const matchesQuery =
+            !presetFilterText ||
+            p.label.toLowerCase().includes(presetFilterText) ||
+            (p.noun && p.noun.toLowerCase().includes(presetFilterText));
+          if (!matchesQuery) continue;
+          totalVisible++;
+          presetsGrid.appendChild(createPresetBtn(key, p));
+        }
       }
-      if (matchCount === 0) {
+
+      countBadge.textContent = `${totalVisible} object${totalVisible === 1 ? '' : 's'}`;
+
+      if (totalVisible === 0) {
         presetsGrid.appendChild(
-          U.h('div', { style: { padding: '14px 8px', fontSize: 'var(--fs-xs)', color: 'var(--text-2)', textAlign: 'center' } }, 'No matching objects found.')
+          U.h(
+            'div',
+            { style: { padding: '14px 8px', fontSize: 'var(--fs-xs)', color: 'var(--text-2)', textAlign: 'center' } },
+            'No matching objects found.'
+          )
         );
       }
     }

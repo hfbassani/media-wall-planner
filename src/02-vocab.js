@@ -81,12 +81,14 @@
   const categories = {
     all: { label: 'All', icon: '✦' },
     displays: { label: 'Displays', icon: '📺' },
+    electronics: { label: 'Gaming & Gear', icon: '🎮' },
     audio: { label: 'Audio', icon: '🔊' },
     millwork: { label: 'Cabinetry', icon: '🗄️' },
     shelving: { label: 'Shelving', icon: '📚' },
     backdrops: { label: 'Backdrops', icon: '🪵' },
     fireplace: { label: 'Fireplace', icon: '🔥' },
-    props: { label: 'Props & Lights', icon: '💡' },
+    seating: { label: 'Seating', icon: '🛋️' },
+    props: { label: 'Lighting & Decor', icon: '💡' },
   };
 
   const moods = {

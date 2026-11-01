@@ -163,6 +163,7 @@
     const hasCredenza = state.elements.some((e) => e.type.includes('credenza') || e.type.includes('bench') || e.type === 'upper' || e.type === 'tower_vert' || e.type.includes('sideboard') || e.type.includes('drawer') || e.type.includes('desk'));
     const hasVitrine = state.elements.some((e) => e.type.includes('vitrine'));
     const hasSeating = state.elements.some((e) => e.type.includes('chair') || e.type.includes('sofa') || (V.presets[e.type] && V.presets[e.type].category === 'seating'));
+    const hasElectronics = state.elements.some((e) => e.type.startsWith('console_') || e.type.startsWith('pc_') || e.type.startsWith('receiver_') || e.type.startsWith('monitor_') || e.type.startsWith('electronics_') || (V.presets[e.type] && V.presets[e.type].category === 'electronics'));
     const hasLamps = state.elements.some((e) => e.type.includes('lamp') || e.type.includes('pendant'));
     const hasTv = state.elements.some((e) => e.type.startsWith('tv') || e.type.startsWith('screen') || e.texture === 'glass');
     const hasSoundbar = state.elements.some((e) => e.type === 'soundbar' || e.type === 'speaker_inwall' || e.type === 'subwoofer' || e.type === 'av_bay');
@@ -237,6 +238,10 @@
 
     if (hasSeating) {
       craftBulletPoints.push(`- Seating & Living Room Scale: Contemporary upholstered seating silhouettes (bouclé or linen upholstery on solid timber or blackened steel frames) providing authentic living room proportion and human scale.`);
+    }
+
+    if (hasElectronics) {
+      craftBulletPoints.push(`- Gaming & AV Electronics: Sleek modern entertainment electronics including flush-mounted gaming consoles, high-fidelity AV receiver with illuminated OLED display, and minimalist desktop PC/monitors cleanly integrated into the joinery.`);
     }
 
     if (hasLamps) {

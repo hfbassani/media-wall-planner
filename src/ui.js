@@ -10,6 +10,7 @@
   let presetFilterText = '';
   let activeInspectorZone = 'primary';
   let activePaletteFam = null;
+  const collapsedCategories = new Set();
 
   function init() {
     leftSidebar = document.getElementById('sidebar-left');
@@ -430,7 +431,7 @@
     const searchInput = U.h('input', {
       type: 'text',
       class: 'preset-search-input',
-      placeholder: 'Search 30+ objects...',
+      placeholder: 'Search 60+ objects...',
       value: presetFilterText,
       oninput: (e) => {
         presetFilterText = e.target.value.toLowerCase().trim();
@@ -444,6 +445,7 @@
     const catTabs = U.h('div', { class: 'preset-category-tabs' });
     const categories = V.categories || { all: { label: 'All' } };
     for (const [catKey, catObj] of Object.entries(categories)) {
+      const tabLabel = catObj.icon ? `${catObj.icon} ${catObj.label}` : catObj.label;
       const tabBtn = U.h(
         'button',
         {
@@ -455,44 +457,163 @@
             refreshPresetsGrid();
           },
         },
-        catObj.label
+        tabLabel
       );
       catTabs.appendChild(tabBtn);
     }
     secPresets.appendChild(catTabs);
 
+    // Actions Bar (Total counter + Expand/Collapse All buttons)
+    const actionsBar = U.h('div', { class: 'preset-actions-bar' });
+    const countBadge = U.h('span', { class: 'preset-total-badge' }, '');
+    const expandLinks = U.h('div', { class: 'preset-expand-links' });
+    const btnExpandAll = U.h(
+      'button',
+      {
+        type: 'button',
+        class: 'preset-link-btn',
+        onclick: () => {
+          collapsedCategories.clear();
+          refreshPresetsGrid();
+        },
+      },
+      'Expand All'
+    );
+    const btnCollapseAll = U.h(
+      'button',
+      {
+        type: 'button',
+        class: 'preset-link-btn',
+        onclick: () => {
+          for (const k of Object.keys(V.categories || {})) {
+            if (k !== 'all') collapsedCategories.add(k);
+          }
+          refreshPresetsGrid();
+        },
+      },
+      'Collapse All'
+    );
+    expandLinks.appendChild(btnExpandAll);
+    expandLinks.appendChild(btnCollapseAll);
+    actionsBar.appendChild(countBadge);
+    actionsBar.appendChild(expandLinks);
+    secPresets.appendChild(actionsBar);
+
     const presetsGrid = U.h('div', { class: 'presets-grid' });
+
+    function createPresetBtn(key, p) {
+      return U.h(
+        'button',
+        {
+          class: 'preset-item-btn',
+          title: p.description || p.label,
+          onclick: () => {
+            A.store.addPreset(key);
+            if (window.innerWidth <= 900) rightSidebar.classList.add('open');
+          },
+        },
+        U.h(
+          'div',
+          { class: 'preset-label-wrap' },
+          U.h('span', { class: 'preset-swatch-dot', style: { background: p.color } }),
+          U.h('span', null, p.label)
+        ),
+        U.h('span', { class: 'preset-dims' }, `${p.width}×${p.height}`)
+      );
+    }
+
     function refreshPresetsGrid() {
       presetsGrid.innerHTML = '';
-      let matchCount = 0;
-      for (const [key, p] of Object.entries(V.presets)) {
-        if (key === 'custom') continue;
-        const matchesCat = activePresetCat === 'all' || p.category === activePresetCat;
-        const matchesQuery = !presetFilterText || p.label.toLowerCase().includes(presetFilterText) || (p.noun && p.noun.toLowerCase().includes(presetFilterText));
-        if (!matchesCat || !matchesQuery) continue;
-        matchCount++;
+      const isAll = activePresetCat === 'all';
+      actionsBar.style.display = isAll ? 'flex' : 'none';
 
-        const btn = U.h(
-          'button',
-          {
-            class: 'preset-item-btn',
-            title: p.description || p.label,
-            onclick: () => {
-              A.store.addPreset(key);
-              if (window.innerWidth <= 900) rightSidebar.classList.add('open');
+      const cats = V.categories || {};
+      let totalVisible = 0;
+
+      if (isAll) {
+        // Render collapsible category groups
+        for (const [catKey, catObj] of Object.entries(cats)) {
+          if (catKey === 'all') continue;
+
+          const items = [];
+          for (const [key, p] of Object.entries(V.presets)) {
+            if (key === 'custom') continue;
+            if (p.category !== catKey) continue;
+            const matchesQuery =
+              !presetFilterText ||
+              p.label.toLowerCase().includes(presetFilterText) ||
+              (p.noun && p.noun.toLowerCase().includes(presetFilterText));
+            if (!matchesQuery) continue;
+            items.push([key, p]);
+          }
+
+          if (items.length === 0) continue;
+          totalVisible += items.length;
+
+          // When searching, auto-expand so matching items are visible
+          const isCollapsed = !presetFilterText && collapsedCategories.has(catKey);
+
+          const groupEl = U.h('div', { class: 'preset-category-group' });
+          const chevron = U.h('span', { class: 'preset-group-chevron' }, isCollapsed ? '▶' : '▼');
+          const header = U.h(
+            'div',
+            {
+              class: 'preset-group-header',
+              onclick: () => {
+                if (collapsedCategories.has(catKey)) {
+                  collapsedCategories.delete(catKey);
+                } else {
+                  collapsedCategories.add(catKey);
+                }
+                refreshPresetsGrid();
+              },
             },
-          },
-          U.h('div', { class: 'preset-label-wrap' },
-            U.h('span', { class: 'preset-swatch-dot', style: { background: p.color } }),
-            U.h('span', null, p.label)
-          ),
-          U.h('span', { class: 'preset-dims' }, `${p.width}×${p.height}`)
-        );
-        presetsGrid.appendChild(btn);
+            U.h(
+              'div',
+              { class: 'preset-group-title' },
+              catObj.icon ? U.h('span', null, catObj.icon) : null,
+              U.h('span', null, catObj.label)
+            ),
+            U.h(
+              'div',
+              { class: 'preset-group-meta' },
+              U.h('span', { class: 'preset-group-count' }, `${items.length}`),
+              chevron
+            )
+          );
+          groupEl.appendChild(header);
+
+          const body = U.h('div', { class: `preset-group-body ${isCollapsed ? 'collapsed' : ''}` });
+          for (const [key, p] of items) {
+            body.appendChild(createPresetBtn(key, p));
+          }
+          groupEl.appendChild(body);
+          presetsGrid.appendChild(groupEl);
+        }
+      } else {
+        // Flat list for a single selected category
+        for (const [key, p] of Object.entries(V.presets)) {
+          if (key === 'custom') continue;
+          if (p.category !== activePresetCat) continue;
+          const matchesQuery =
+            !presetFilterText ||
+            p.label.toLowerCase().includes(presetFilterText) ||
+            (p.noun && p.noun.toLowerCase().includes(presetFilterText));
+          if (!matchesQuery) continue;
+          totalVisible++;
+          presetsGrid.appendChild(createPresetBtn(key, p));
+        }
       }
-      if (matchCount === 0) {
+
+      countBadge.textContent = `${totalVisible} object${totalVisible === 1 ? '' : 's'}`;
+
+      if (totalVisible === 0) {
         presetsGrid.appendChild(
-          U.h('div', { style: { padding: '14px 8px', fontSize: 'var(--fs-xs)', color: 'var(--text-2)', textAlign: 'center' } }, 'No matching objects found.')
+          U.h(
+            'div',
+            { style: { padding: '14px 8px', fontSize: 'var(--fs-xs)', color: 'var(--text-2)', textAlign: 'center' } },
+            'No matching objects found.'
+          )
         );
       }
     }
